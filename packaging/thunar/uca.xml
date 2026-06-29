@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+  <action>
+    <icon>folder-svn</icon>
+    <name>qsvn: Open</name>
+    <unique-id>qsvn-open</unique-id>
+    <command>qsvn --open %f</command>
+    <description>Open the selected SVN working copy path in qsvn</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>view-refresh</icon>
+    <name>qsvn: Status</name>
+    <unique-id>qsvn-status</unique-id>
+    <command>qsvn --status %f</command>
+    <description>Show SVN status in qsvn</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>download</icon>
+    <name>qsvn: Update</name>
+    <unique-id>qsvn-update</unique-id>
+    <command>qsvn --update %f</command>
+    <description>Update the selected SVN path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>document-send</icon>
+    <name>qsvn: Commit</name>
+    <unique-id>qsvn-commit</unique-id>
+    <command>qsvn --commit %f</command>
+    <description>Commit changes under the selected SVN path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>list-add</icon>
+    <name>qsvn: Add</name>
+    <unique-id>qsvn-add</unique-id>
+    <command>qsvn --add %f</command>
+    <description>Add the selected path to SVN</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>view-hidden</icon>
+    <name>qsvn: Ignore</name>
+    <unique-id>qsvn-ignore</unique-id>
+    <command>qsvn --ignore %f</command>
+    <description>Add the selected path name to svn:ignore on its parent folder</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>edit-copy</icon>
+    <name>qsvn: Copy</name>
+    <unique-id>qsvn-copy</unique-id>
+    <command>qsvn --copy %f</command>
+    <description>Copy the selected path with SVN</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>user-trash</icon>
+    <name>qsvn: Delete</name>
+    <unique-id>qsvn-delete</unique-id>
+    <command>qsvn --delete %f</command>
+    <description>Delete the selected path with SVN after confirmation</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>edit-rename</icon>
+    <name>qsvn: Rename</name>
+    <unique-id>qsvn-rename</unique-id>
+    <command>qsvn --rename %f</command>
+    <description>Rename the selected path with SVN</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>edit-undo</icon>
+    <name>qsvn: Revert</name>
+    <unique-id>qsvn-revert</unique-id>
+    <command>qsvn --revert %f</command>
+    <description>Revert the selected SVN path after confirmation</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>edit-clear</icon>
+    <name>qsvn: Cleanup</name>
+    <unique-id>qsvn-cleanup</unique-id>
+    <command>qsvn --cleanup %f</command>
+    <description>Clean up the selected SVN working copy</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>dialog-warning</icon>
+    <name>qsvn: Conflicts</name>
+    <unique-id>qsvn-conflicts</unique-id>
+    <command>qsvn --conflicts %f</command>
+    <description>Show SVN conflicts under the selected path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>view-split-left-right</icon>
+    <name>qsvn: Diff</name>
+    <unique-id>qsvn-diff</unique-id>
+    <command>qsvn --diff %f</command>
+    <description>Show SVN diff for the selected path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>view-history</icon>
+    <name>qsvn: Log</name>
+    <unique-id>qsvn-log</unique-id>
+    <command>qsvn --log %f</command>
+    <description>Show SVN log for the selected path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>code-context</icon>
+    <name>qsvn: Blame</name>
+    <unique-id>qsvn-blame</unique-id>
+    <command>qsvn --blame %f</command>
+    <description>Show SVN blame for the selected file</description>
+    <patterns>*</patterns>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>document-properties</icon>
+    <name>qsvn: Properties</name>
+    <unique-id>qsvn-properties</unique-id>
+    <command>qsvn --properties %f</command>
+    <description>Show SVN properties for the selected path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+</actions>

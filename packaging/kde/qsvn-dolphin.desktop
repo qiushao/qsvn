@@ -1,0 +1,87 @@
+[Desktop Entry]
+Type=Service
+ServiceTypes=KonqPopupMenu/Plugin
+MimeType=inode/directory;all/all;
+Actions=Open;Status;Update;Commit;Add;Ignore;Copy;Delete;Rename;Revert;Cleanup;Conflicts;Diff;Log;Blame;Properties;
+X-KDE-Priority=TopLevel
+X-KDE-Submenu=qsvn
+
+[Desktop Action Open]
+Name=Open in qsvn
+Icon=folder-svn
+Exec=qsvn --open %f
+
+[Desktop Action Status]
+Name=Show SVN Status
+Icon=view-refresh
+Exec=qsvn --status %f
+
+[Desktop Action Update]
+Name=SVN Update
+Icon=download
+Exec=qsvn --update %f
+
+[Desktop Action Commit]
+Name=SVN Commit
+Icon=document-send
+Exec=qsvn --commit %f
+
+[Desktop Action Add]
+Name=SVN Add
+Icon=list-add
+Exec=qsvn --add %f
+
+[Desktop Action Ignore]
+Name=SVN Ignore
+Icon=view-hidden
+Exec=qsvn --ignore %f
+
+[Desktop Action Copy]
+Name=SVN Copy
+Icon=edit-copy
+Exec=qsvn --copy %f
+
+[Desktop Action Delete]
+Name=SVN Delete
+Icon=user-trash
+Exec=qsvn --delete %f
+
+[Desktop Action Rename]
+Name=SVN Rename
+Icon=edit-rename
+Exec=qsvn --rename %f
+
+[Desktop Action Revert]
+Name=SVN Revert
+Icon=edit-undo
+Exec=qsvn --revert %f
+
+[Desktop Action Cleanup]
+Name=SVN Cleanup
+Icon=edit-clear
+Exec=qsvn --cleanup %f
+
+[Desktop Action Conflicts]
+Name=SVN Conflicts
+Icon=dialog-warning
+Exec=qsvn --conflicts %f
+
+[Desktop Action Diff]
+Name=SVN Diff
+Icon=view-split-left-right
+Exec=qsvn --diff %f
+
+[Desktop Action Log]
+Name=SVN Log
+Icon=view-history
+Exec=qsvn --log %f
+
+[Desktop Action Blame]
+Name=SVN Blame
+Icon=code-context
+Exec=qsvn --blame %f
+
+[Desktop Action Properties]
+Name=SVN Properties
+Icon=document-properties
+Exec=qsvn --properties %f
