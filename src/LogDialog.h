@@ -5,6 +5,7 @@
 #include <QDialog>
 #include <QVector>
 
+class QLineEdit;
 class QPlainTextEdit;
 class QTableWidget;
 
@@ -20,6 +21,7 @@ signals:
 
 private:
     void showEntry(int row);
+    void applyFilter();
     void requestRevisionDiff();
     void requestRevisionBlame();
     int currentEntryRow() const;
@@ -27,6 +29,7 @@ private:
     QString repositoryPathFromChangedPath(const QString &changedPath) const;
 
     QVector<SvnLogEntry> m_entries;
+    QLineEdit *m_filterEdit = nullptr;
     QTableWidget *m_entryTable = nullptr;
     QPlainTextEdit *m_messageView = nullptr;
     QTableWidget *m_pathTable = nullptr;

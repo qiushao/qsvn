@@ -1,7 +1,9 @@
 #include "LogDialog.h"
 
+#include <QBrush>
 #include <QDialogButtonBox>
 #include <QHeaderView>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
@@ -14,6 +16,10 @@ LogDialog::LogDialog(const QVector<SvnLogEntry> &entries, QWidget *parent)
 {
     setWindowTitle(QStringLiteral("Log"));
     resize(920, 680);
+
+    m_filterEdit = new QLineEdit(this);
+    m_filterEdit->setPlaceholderText(QStringLiteral("Filter by author, message, or path..."));
+    connect(m_filterEdit, &QLineEdit::textChanged, this, &LogDialog::applyFilter);
 
     m_entryTable = new QTableWidget(this);
     m_entryTable->setColumnCount(4);
@@ -42,6 +48,12 @@ LogDialog::LogDialog(const QVector<SvnLogEntry> &entries, QWidget *parent)
     connect(m_entryTable, &QTableWidget::currentCellChanged, this, [this](int currentRow) {
         showEntry(currentRow);
     });
+    connect(m_filterEdit, &QLineEdit::textChanged, this, [this] {
+        const int row = currentEntryRow();
+        if (row >= 0) {
+            showEntry(row);
+        }
+    });
 
     m_messageView = new QPlainTextEdit(this);
     m_messageView->setReadOnly(true);
@@ -62,6 +74,7 @@ LogDialog::LogDialog(const QVector<SvnLogEntry> &entries, QWidget *parent)
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
 
     auto *layout = new QVBoxLayout(this);
+    layout->addWidget(m_filterEdit);
     layout->addWidget(m_entryTable, 3);
     layout->addWidget(m_messageView);
     layout->addWidget(m_pathTable, 2);
@@ -83,9 +96,17 @@ void LogDialog::showEntry(int row)
 
     const SvnLogEntry &entry = m_entries.at(row);
     m_messageView->setPlainText(entry.message);
+
+    const QString keyword = m_filterEdit->text().trimmed().toLower();
+    const QColor highlightColor = QColor(Qt::yellow).lighter(150);
+
     m_pathTable->setRowCount(entry.changedPaths.size());
     for (int pathRow = 0; pathRow < entry.changedPaths.size(); ++pathRow) {
-        m_pathTable->setItem(pathRow, 0, new QTableWidgetItem(entry.changedPaths.at(pathRow)));
+        auto *item = new QTableWidgetItem(entry.changedPaths.at(pathRow));
+        if (!keyword.isEmpty() && entry.changedPaths.at(pathRow).toLower().contains(keyword)) {
+            item->setBackground(highlightColor);
+        }
+        m_pathTable->setItem(pathRow, 0, item);
     }
 }
 
@@ -133,6 +154,34 @@ QString LogDialog::currentChangedPath() const
     }
 
     return selectedItems.first()->text();
+}
+
+void LogDialog::applyFilter()
+{
+    const QString keyword = m_filterEdit->text().trimmed().toLower();
+
+    for (int row = 0; row < m_entries.size(); ++row) {
+        const SvnLogEntry &entry = m_entries.at(row);
+
+        if (keyword.isEmpty()) {
+            m_entryTable->setRowHidden(row, false);
+            continue;
+        }
+
+        bool matches = entry.author.toLower().contains(keyword) ||
+                       entry.message.toLower().contains(keyword);
+
+        if (!matches) {
+            for (const QString &path : entry.changedPaths) {
+                if (path.toLower().contains(keyword)) {
+                    matches = true;
+                    break;
+                }
+            }
+        }
+
+        m_entryTable->setRowHidden(row, !matches);
+    }
 }
 
 QString LogDialog::repositoryPathFromChangedPath(const QString &changedPath) const
