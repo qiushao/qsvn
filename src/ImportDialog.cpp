@@ -47,6 +47,11 @@ ImportDialog::ImportDialog(QWidget *parent)
     layout->addWidget(buttons);
 }
 
+void ImportDialog::setLocalPath(const QString &path)
+{
+    m_localPathEdit->setText(path);
+}
+
 QString ImportDialog::localPath() const
 {
     return m_localPathEdit->text().trimmed();

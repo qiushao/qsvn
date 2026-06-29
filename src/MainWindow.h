@@ -21,7 +21,9 @@ class MainWindow : public QMainWindow {
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     bool openPath(const QString &path);
+    bool checkRepositoryPath(const QString &path);
     bool updatePath(const QString &path);
+    bool updateToRevisionPath(const QString &path);
     bool commitPath(const QString &path);
     bool addPath(const QString &path);
     bool ignorePath(const QString &path);
@@ -29,7 +31,11 @@ public:
     bool deletePath(const QString &path);
     bool renamePath(const QString &path);
     bool revertPath(const QString &path);
+    bool lockPath(const QString &path);
+    bool unlockPath(const QString &path);
     bool cleanupPath(const QString &path);
+    bool exportPath(const QString &path);
+    bool importPath(const QString &path);
     bool showDiffForPath(const QString &path);
     bool showLogForPath(const QString &path);
     bool showBlameForPath(const QString &path);
@@ -50,6 +56,7 @@ private:
     QString workingCopyRootForPath(const QString &path) const;
     QString workingCopyUrl() const;
     QString workingCopyRepositoryRootUrl() const;
+    bool loadStatus(const QStringList &arguments, const QString &failureTitle, const QString &statusMessage);
     void refreshStatus();
     void appendResult(const SvnResult &result);
     void showTextDialog(const QString &title, const QString &text);
@@ -71,6 +78,7 @@ private:
     void updateWorkingCopy();
     void updateToRevision();
     void commitChanges();
+    void checkRepositoryStatus();
     void addSelected();
     void ignoreSelected();
     void copySelected();
@@ -115,6 +123,7 @@ private:
     QAction *m_relocateAction = nullptr;
     QAction *m_mergeAction = nullptr;
     QAction *m_refreshAction = nullptr;
+    QAction *m_checkRepositoryAction = nullptr;
     QAction *m_updateAction = nullptr;
     QAction *m_updateRevisionAction = nullptr;
     QAction *m_commitAction = nullptr;

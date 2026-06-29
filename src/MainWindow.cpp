@@ -71,6 +71,15 @@ bool MainWindow::openPath(const QString &path)
     return true;
 }
 
+bool MainWindow::checkRepositoryPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    return loadStatus({QStringLiteral("status"), QStringLiteral("-u")}, QStringLiteral("Check Repository failed"), QStringLiteral("%1 working copy status item(s)"));
+}
+
 bool MainWindow::updatePath(const QString &path)
 {
     if (!openPath(path)) {
@@ -84,6 +93,38 @@ bool MainWindow::updatePath(const QString &path)
 
     if (!result.ok()) {
         QMessageBox::warning(this, QStringLiteral("Update failed"), result.combinedOutput());
+        return false;
+    }
+
+    refreshStatus();
+    return true;
+}
+
+bool MainWindow::updateToRevisionPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    bool ok = false;
+    const QString revision = QInputDialog::getText(this,
+                                                  QStringLiteral("Update to Revision"),
+                                                  QStringLiteral("Revision:"),
+                                                  QLineEdit::Normal,
+                                                  QStringLiteral("HEAD"),
+                                                  &ok)
+                                 .trimmed();
+    if (!ok || revision.isEmpty()) {
+        return false;
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run({QStringLiteral("update"), QStringLiteral("-r"), revision, path}, m_workingCopy);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Update to Revision failed"), result.combinedOutput());
         return false;
     }
 
@@ -339,6 +380,56 @@ bool MainWindow::revertPath(const QString &path)
     return true;
 }
 
+bool MainWindow::lockPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    bool ok = false;
+    const QString message = QInputDialog::getMultiLineText(this,
+                                                          QStringLiteral("Lock"),
+                                                          QStringLiteral("Lock message:"),
+                                                          QString(),
+                                                          &ok);
+    if (!ok) {
+        return false;
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run({QStringLiteral("lock"), QStringLiteral("-m"), message, path}, m_workingCopy);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Lock failed"), result.combinedOutput());
+        return false;
+    }
+
+    refreshStatus();
+    return true;
+}
+
+bool MainWindow::unlockPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run({QStringLiteral("unlock"), path}, m_workingCopy);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Unlock failed"), result.combinedOutput());
+        return false;
+    }
+
+    refreshStatus();
+    return true;
+}
+
 bool MainWindow::cleanupPath(const QString &path)
 {
     if (!openPath(path)) {
@@ -356,6 +447,65 @@ bool MainWindow::cleanupPath(const QString &path)
     }
 
     refreshStatus();
+    return true;
+}
+
+bool MainWindow::exportPath(const QString &path)
+{
+    ExportDialog dialog(this);
+    dialog.setSourceUrl(path);
+    if (dialog.exec() != QDialog::Accepted) {
+        return false;
+    }
+
+    QStringList arguments = {QStringLiteral("export")};
+    if (dialog.force()) {
+        arguments.append(QStringLiteral("--force"));
+    }
+    if (!dialog.revision().isEmpty()) {
+        arguments.append({QStringLiteral("-r"), dialog.revision()});
+    }
+    arguments.append({dialog.sourceUrl(), dialog.targetPath()});
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run(arguments);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Export failed"), result.combinedOutput());
+        return false;
+    }
+
+    statusBar()->showMessage(QStringLiteral("Export completed."));
+    return true;
+}
+
+bool MainWindow::importPath(const QString &path)
+{
+    ImportDialog dialog(this);
+    dialog.setLocalPath(path);
+    if (dialog.exec() != QDialog::Accepted) {
+        return false;
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run({
+        QStringLiteral("import"),
+        dialog.localPath(),
+        dialog.targetUrl(),
+        QStringLiteral("-m"),
+        dialog.message(),
+    });
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Import failed"), result.combinedOutput());
+        return false;
+    }
+
+    statusBar()->showMessage(QStringLiteral("Import completed."));
     return true;
 }
 
@@ -572,6 +722,9 @@ void MainWindow::createActions()
     m_refreshAction = new QAction(style()->standardIcon(QStyle::SP_BrowserReload), QStringLiteral("Status"), this);
     connect(m_refreshAction, &QAction::triggered, this, &MainWindow::refreshStatus);
 
+    m_checkRepositoryAction = new QAction(QStringLiteral("Check Repository"), this);
+    connect(m_checkRepositoryAction, &QAction::triggered, this, &MainWindow::checkRepositoryStatus);
+
     m_updateAction = new QAction(style()->standardIcon(QStyle::SP_ArrowDown), QStringLiteral("Update"), this);
     connect(m_updateAction, &QAction::triggered, this, &MainWindow::updateWorkingCopy);
 
@@ -671,6 +824,7 @@ void MainWindow::createCentralWidget()
     connect(m_treeView, &QTreeView::customContextMenuRequested, this, [this](const QPoint &position) {
         QMenu menu(this);
         menu.addAction(m_addAction);
+        menu.addAction(m_checkRepositoryAction);
         menu.addAction(m_ignoreAction);
         menu.addAction(m_copyAction);
         menu.addAction(m_deleteAction);
@@ -706,6 +860,7 @@ void MainWindow::createCentralWidget()
     connect(m_statusTable, &QTableWidget::customContextMenuRequested, this, [this](const QPoint &position) {
         QMenu menu(this);
         menu.addAction(m_addAction);
+        menu.addAction(m_checkRepositoryAction);
         menu.addAction(m_ignoreAction);
         menu.addAction(m_copyAction);
         menu.addAction(m_deleteAction);
@@ -754,6 +909,7 @@ void MainWindow::createMenus()
     repositoryMenu->addAction(m_mergeAction);
     repositoryMenu->addSeparator();
     repositoryMenu->addAction(m_refreshAction);
+    repositoryMenu->addAction(m_checkRepositoryAction);
     repositoryMenu->addAction(m_updateAction);
     repositoryMenu->addAction(m_updateRevisionAction);
     repositoryMenu->addAction(m_commitAction);
@@ -804,6 +960,7 @@ void MainWindow::createToolBar()
     toolbar->addAction(m_mergeAction);
     toolbar->addSeparator();
     toolbar->addAction(m_refreshAction);
+    toolbar->addAction(m_checkRepositoryAction);
     toolbar->addAction(m_updateAction);
     toolbar->addAction(m_commitAction);
     toolbar->addSeparator();
@@ -960,20 +1117,20 @@ QString MainWindow::workingCopyRepositoryRootUrl() const
     return QString();
 }
 
-void MainWindow::refreshStatus()
+bool MainWindow::loadStatus(const QStringList &arguments, const QString &failureTitle, const QString &statusMessage)
 {
     if (!ensureWorkingCopy()) {
-        return;
+        return false;
     }
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    const SvnResult result = m_svn.run({QStringLiteral("status")}, m_workingCopy);
+    const SvnResult result = m_svn.run(arguments, m_workingCopy);
     QApplication::restoreOverrideCursor();
     appendResult(result);
 
     if (!result.ok()) {
-        QMessageBox::warning(this, QStringLiteral("Status failed"), result.combinedOutput());
-        return;
+        QMessageBox::warning(this, failureTitle, result.combinedOutput());
+        return false;
     }
 
     m_statuses = m_svn.parseStatus(result.standardOutput);
@@ -983,7 +1140,13 @@ void MainWindow::refreshStatus()
         m_statusTable->setItem(row, 1, new QTableWidgetItem(m_statuses.at(row).path));
     }
 
-    statusBar()->showMessage(QStringLiteral("%1 local change(s)").arg(m_statuses.size()));
+    statusBar()->showMessage(statusMessage.arg(m_statuses.size()));
+    return true;
+}
+
+void MainWindow::refreshStatus()
+{
+    loadStatus({QStringLiteral("status")}, QStringLiteral("Status failed"), QStringLiteral("%1 local change(s)"));
 }
 
 void MainWindow::appendResult(const SvnResult &result)
@@ -1218,60 +1381,12 @@ void MainWindow::checkout()
 
 void MainWindow::exportProject()
 {
-    ExportDialog dialog(this);
-    if (!m_workingCopy.isEmpty()) {
-        dialog.setSourceUrl(workingCopyUrl());
-    }
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    QStringList arguments = {QStringLiteral("export")};
-    if (dialog.force()) {
-        arguments.append(QStringLiteral("--force"));
-    }
-    if (!dialog.revision().isEmpty()) {
-        arguments.append({QStringLiteral("-r"), dialog.revision()});
-    }
-    arguments.append({dialog.sourceUrl(), dialog.targetPath()});
-
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    const SvnResult result = m_svn.run(arguments);
-    QApplication::restoreOverrideCursor();
-    appendResult(result);
-
-    if (!result.ok()) {
-        QMessageBox::warning(this, QStringLiteral("Export failed"), result.combinedOutput());
-        return;
-    }
-
-    statusBar()->showMessage(QStringLiteral("Export completed."));
+    exportPath(m_workingCopy.isEmpty() ? QString() : workingCopyUrl());
 }
 
 void MainWindow::importProject()
 {
-    ImportDialog dialog(this);
-    if (dialog.exec() != QDialog::Accepted) {
-        return;
-    }
-
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    const SvnResult result = m_svn.run({
-        QStringLiteral("import"),
-        dialog.localPath(),
-        dialog.targetUrl(),
-        QStringLiteral("-m"),
-        dialog.message(),
-    });
-    QApplication::restoreOverrideCursor();
-    appendResult(result);
-
-    if (!result.ok()) {
-        QMessageBox::warning(this, QStringLiteral("Import failed"), result.combinedOutput());
-        return;
-    }
-
-    statusBar()->showMessage(QStringLiteral("Import completed."));
+    importPath(QString());
 }
 
 void MainWindow::browseRepository()
@@ -1417,6 +1532,11 @@ void MainWindow::commitChanges()
     QStringList arguments = {QStringLiteral("commit"), QStringLiteral("-m"), dialog.message()};
     arguments.append(dialog.selectedPaths());
     runWorkingCopyCommand(arguments, true);
+}
+
+void MainWindow::checkRepositoryStatus()
+{
+    loadStatus({QStringLiteral("status"), QStringLiteral("-u")}, QStringLiteral("Check Repository failed"), QStringLiteral("%1 working copy status item(s)"));
 }
 
 void MainWindow::addSelected()
@@ -1887,6 +2007,7 @@ void MainWindow::updateActionState()
     m_relocateAction->setEnabled(hasWorkingCopy);
     m_mergeAction->setEnabled(hasWorkingCopy);
     m_refreshAction->setEnabled(hasWorkingCopy);
+    m_checkRepositoryAction->setEnabled(hasWorkingCopy);
     m_updateAction->setEnabled(hasWorkingCopy);
     m_updateRevisionAction->setEnabled(hasWorkingCopy);
     m_commitAction->setEnabled(hasWorkingCopy);

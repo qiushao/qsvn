@@ -11,6 +11,7 @@ class ImportDialog : public QDialog {
 public:
     explicit ImportDialog(QWidget *parent = nullptr);
 
+    void setLocalPath(const QString &path);
     QString localPath() const;
     QString targetUrl() const;
     QString message() const;

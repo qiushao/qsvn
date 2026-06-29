@@ -13,7 +13,7 @@ Current scope:
 - Browse a repository URL with `svn list`.
 - Create, copy, rename, and delete repository folders from the repository browser.
 - Browse files in the working copy.
-- Show `svn status`.
+- Show local `svn status` and remote `svn status -u` checks.
 - Create branches or tags with `svn copy`.
 - Switch a working copy to another repository URL.
 - Relocate a working copy after the repository URL changes.
@@ -52,7 +52,11 @@ Examples:
 
 ```sh
 qsvn --open /path/to/working-copy
+qsvn --check-repository /path/to/working-copy
+qsvn --export /path/to/working-copy
+qsvn --import /path/to/local-directory
 qsvn --update /path/to/working-copy
+qsvn --update-revision /path/to/working-copy
 qsvn --commit /path/to/working-copy
 qsvn --add /path/to/working-copy/new-file.cpp
 qsvn --ignore /path/to/working-copy/generated.tmp
@@ -60,6 +64,8 @@ qsvn --copy /path/to/working-copy/file.cpp
 qsvn --delete /path/to/working-copy/old-file.cpp
 qsvn --rename /path/to/working-copy/file.cpp
 qsvn --revert /path/to/working-copy/file.cpp
+qsvn --lock /path/to/working-copy/file.cpp
+qsvn --unlock /path/to/working-copy/file.cpp
 qsvn --cleanup /path/to/working-copy
 qsvn --conflicts /path/to/working-copy
 qsvn --diff /path/to/working-copy/file.cpp

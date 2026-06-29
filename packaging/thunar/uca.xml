@@ -23,11 +23,55 @@
     <other-files/>
   </action>
   <action>
+    <icon>network-server</icon>
+    <name>qsvn: Check Repository</name>
+    <unique-id>qsvn-check-repository</unique-id>
+    <command>qsvn --check-repository %f</command>
+    <description>Check selected working copy path against the repository</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>document-export</icon>
+    <name>qsvn: Export</name>
+    <unique-id>qsvn-export</unique-id>
+    <command>qsvn --export %f</command>
+    <description>Export the selected SVN path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>document-import</icon>
+    <name>qsvn: Import</name>
+    <unique-id>qsvn-import</unique-id>
+    <command>qsvn --import %f</command>
+    <description>Import the selected local path into SVN</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
     <icon>download</icon>
     <name>qsvn: Update</name>
     <unique-id>qsvn-update</unique-id>
     <command>qsvn --update %f</command>
     <description>Update the selected SVN path</description>
+    <patterns>*</patterns>
+    <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>view-calendar</icon>
+    <name>qsvn: Update to Revision</name>
+    <unique-id>qsvn-update-revision</unique-id>
+    <command>qsvn --update-revision %f</command>
+    <description>Update the selected SVN path to a chosen revision</description>
     <patterns>*</patterns>
     <directories/>
     <text-files/>
@@ -107,6 +151,26 @@
     <description>Revert the selected SVN path after confirmation</description>
     <patterns>*</patterns>
     <directories/>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>object-locked</icon>
+    <name>qsvn: Lock</name>
+    <unique-id>qsvn-lock</unique-id>
+    <command>qsvn --lock %f</command>
+    <description>Lock the selected SVN file</description>
+    <patterns>*</patterns>
+    <text-files/>
+    <other-files/>
+  </action>
+  <action>
+    <icon>object-unlocked</icon>
+    <name>qsvn: Unlock</name>
+    <unique-id>qsvn-unlock</unique-id>
+    <command>qsvn --unlock %f</command>
+    <description>Unlock the selected SVN file</description>
+    <patterns>*</patterns>
     <text-files/>
     <other-files/>
   </action>

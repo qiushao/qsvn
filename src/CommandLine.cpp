@@ -35,8 +35,28 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
         request.path = readPath(1);
         return request;
     }
+    if (command == QStringLiteral("--check-repository")) {
+        request.action = CommandLineAction::CheckRepository;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--export")) {
+        request.action = CommandLineAction::Export;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--import")) {
+        request.action = CommandLineAction::Import;
+        request.path = readPath(1);
+        return request;
+    }
     if (command == QStringLiteral("--update")) {
         request.action = CommandLineAction::Update;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--update-revision")) {
+        request.action = CommandLineAction::UpdateRevision;
         request.path = readPath(1);
         return request;
     }
@@ -72,6 +92,16 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
     }
     if (command == QStringLiteral("--revert")) {
         request.action = CommandLineAction::Revert;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--lock")) {
+        request.action = CommandLineAction::Lock;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--unlock")) {
+        request.action = CommandLineAction::Unlock;
         request.path = readPath(1);
         return request;
     }

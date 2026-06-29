@@ -25,6 +25,8 @@ private slots:
     void parseLogXmlReadsEntriesAndChangedPaths();
     void parsePropertiesXmlReadsNamesAndValues();
     void runHandlesLocalRepositoryWorkflow();
+    void runHandlesUpdateToRevisionWorkflow();
+    void runHandlesCheckRepositoryWorkflow();
     void runHandlesBranchSwitchAndMergeWorkflow();
     void runHandlesPatchWorkflow();
     void runHandlesRevisionDiffWorkflow();
@@ -36,6 +38,7 @@ private slots:
     void runHandlesCopyWorkflow();
     void runHandlesDeleteWorkflow();
     void runHandlesRenameWorkflow();
+    void runHandlesLockWorkflow();
     void runHandlesRemoteRepositoryEditingWorkflow();
     void runHandlesChangelistWorkflow();
 };
@@ -51,6 +54,26 @@ void SvnClientTests::parseCommandLineReadsActions()
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Update));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--update-revision"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::UpdateRevision));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--export"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Export));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--check-repository"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::CheckRepository));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--import"), QStringLiteral("/tmp/project")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Import));
+    QCOMPARE(request.path, QStringLiteral("/tmp/project"));
 
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--commit"), QStringLiteral("/tmp/wc")});
     QVERIFY(request.ok());
@@ -85,6 +108,16 @@ void SvnClientTests::parseCommandLineReadsActions()
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--revert"), QStringLiteral("/tmp/wc/file.txt")});
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Revert));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--lock"), QStringLiteral("/tmp/wc/file.txt")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Lock));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--unlock"), QStringLiteral("/tmp/wc/file.txt")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Unlock));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
 
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--cleanup"), QStringLiteral("/tmp/wc")});
@@ -191,15 +224,25 @@ void SvnClientTests::parseStatusReadsCodesAndPaths()
         "--- Changelist 'review':\n"
         "?       file with spaces.txt\n"
         "      > moved from old-name.txt\n"
-        "        > moved to new-name.txt\n"));
+        "        > moved to new-name.txt\n"
+        "        *        1   remote-only.txt\n"
+        "M       *        2   modified-remote.txt\n"
+        "?       123.txt\n"
+        "Status against revision:      3\n"));
 
-    QCOMPARE(statuses.size(), 3);
+    QCOMPARE(statuses.size(), 6);
     QCOMPARE(statuses.at(0).code, QStringLiteral("M"));
     QCOMPARE(statuses.at(0).path, QStringLiteral("src/main.cpp"));
     QCOMPARE(statuses.at(1).code, QStringLiteral("C"));
     QCOMPARE(statuses.at(1).path, QStringLiteral("conflicted.txt"));
     QCOMPARE(statuses.at(2).code, QStringLiteral("?"));
     QCOMPARE(statuses.at(2).path, QStringLiteral("file with spaces.txt"));
+    QCOMPARE(statuses.at(3).code, QStringLiteral("*"));
+    QCOMPARE(statuses.at(3).path, QStringLiteral("remote-only.txt"));
+    QCOMPARE(statuses.at(4).code, QStringLiteral("M *"));
+    QCOMPARE(statuses.at(4).path, QStringLiteral("modified-remote.txt"));
+    QCOMPARE(statuses.at(5).code, QStringLiteral("?"));
+    QCOMPARE(statuses.at(5).path, QStringLiteral("123.txt"));
 }
 
 void SvnClientTests::parseLogXmlReadsEntriesAndChangedPaths()
@@ -295,6 +338,124 @@ void SvnClientTests::runHandlesLocalRepositoryWorkflow()
     QCOMPARE(statuses.size(), 1);
     QCOMPARE(statuses.at(0).code, QStringLiteral("M"));
     QCOMPARE(statuses.at(0).path, QStringLiteral("file.txt"));
+}
+
+void SvnClientTests::runHandlesUpdateToRevisionWorkflow()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("svn")).isEmpty()) {
+        QSKIP("svn executable is not available");
+    }
+    if (QStandardPaths::findExecutable(QStringLiteral("svnadmin")).isEmpty()) {
+        QSKIP("svnadmin executable is not available");
+    }
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString repositoryPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("repo"));
+    const QString workingCopyPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("wc"));
+
+    QCOMPARE(QProcess::execute(QStringLiteral("svnadmin"), {QStringLiteral("create"), repositoryPath}), 0);
+
+    SvnClient client;
+    const QString repositoryUrl = QUrl::fromLocalFile(repositoryPath).toString();
+
+    SvnResult result = client.run({QStringLiteral("checkout"), repositoryUrl, workingCopyPath}, temporaryDir.path());
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    const QString filePath = QDir(workingCopyPath).absoluteFilePath(QStringLiteral("file.txt"));
+    QFile file(filePath);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    QVERIFY(file.write("first\n") > 0);
+    file.close();
+
+    result = client.run({QStringLiteral("add"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("commit"), QStringLiteral("-m"), QStringLiteral("initial"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    QVERIFY(file.open(QIODevice::Append | QIODevice::Text));
+    QVERIFY(file.write("second\n") > 0);
+    file.close();
+
+    result = client.run({QStringLiteral("commit"), QStringLiteral("-m"), QStringLiteral("second"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("update"), QStringLiteral("-r"), QStringLiteral("1"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    QCOMPARE(QString::fromUtf8(file.readAll()), QStringLiteral("first\n"));
+    file.close();
+
+    result = client.run({QStringLiteral("update"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    QCOMPARE(QString::fromUtf8(file.readAll()), QStringLiteral("first\nsecond\n"));
+    file.close();
+}
+
+void SvnClientTests::runHandlesCheckRepositoryWorkflow()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("svn")).isEmpty()) {
+        QSKIP("svn executable is not available");
+    }
+    if (QStandardPaths::findExecutable(QStringLiteral("svnadmin")).isEmpty()) {
+        QSKIP("svnadmin executable is not available");
+    }
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString repositoryPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("repo"));
+    const QString firstWorkingCopyPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("wc1"));
+    const QString secondWorkingCopyPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("wc2"));
+
+    QCOMPARE(QProcess::execute(QStringLiteral("svnadmin"), {QStringLiteral("create"), repositoryPath}), 0);
+
+    SvnClient client;
+    const QString repositoryUrl = QUrl::fromLocalFile(repositoryPath).toString();
+
+    SvnResult result = client.run({QStringLiteral("checkout"), repositoryUrl, firstWorkingCopyPath}, temporaryDir.path());
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    QFile file(QDir(firstWorkingCopyPath).absoluteFilePath(QStringLiteral("file.txt")));
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    QVERIFY(file.write("first\n") > 0);
+    file.close();
+
+    result = client.run({QStringLiteral("add"), QStringLiteral("file.txt")}, firstWorkingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("commit"), QStringLiteral("-m"), QStringLiteral("initial"), QStringLiteral("file.txt")}, firstWorkingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("checkout"), repositoryUrl, secondWorkingCopyPath}, temporaryDir.path());
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    QVERIFY(file.open(QIODevice::Append | QIODevice::Text));
+    QVERIFY(file.write("second\n") > 0);
+    file.close();
+
+    result = client.run({QStringLiteral("commit"), QStringLiteral("-m"), QStringLiteral("second"), QStringLiteral("file.txt")}, firstWorkingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("status"), QStringLiteral("-u")}, secondWorkingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+    QVector<SvnStatus> statuses = client.parseStatus(result.standardOutput);
+    QCOMPARE(statuses.size(), 1);
+    QCOMPARE(statuses.at(0).code, QStringLiteral("*"));
+    QCOMPARE(statuses.at(0).path, QStringLiteral("file.txt"));
+
+    result = client.run({QStringLiteral("update")}, secondWorkingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("status"), QStringLiteral("-u")}, secondWorkingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+    statuses = client.parseStatus(result.standardOutput);
+    QCOMPARE(statuses.size(), 0);
 }
 
 void SvnClientTests::runHandlesBranchSwitchAndMergeWorkflow()
@@ -901,6 +1062,59 @@ void SvnClientTests::runHandlesRenameWorkflow()
     QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
     QVERIFY(!result.standardOutput.contains(QStringLiteral("file.txt")));
     QVERIFY(result.standardOutput.contains(QStringLiteral("renamed.txt")));
+}
+
+void SvnClientTests::runHandlesLockWorkflow()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("svn")).isEmpty()) {
+        QSKIP("svn executable is not available");
+    }
+    if (QStandardPaths::findExecutable(QStringLiteral("svnadmin")).isEmpty()) {
+        QSKIP("svnadmin executable is not available");
+    }
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString repositoryPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("repo"));
+    const QString workingCopyPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("wc"));
+
+    QCOMPARE(QProcess::execute(QStringLiteral("svnadmin"), {QStringLiteral("create"), repositoryPath}), 0);
+
+    SvnClient client;
+    const QString repositoryUrl = QUrl::fromLocalFile(repositoryPath).toString();
+
+    SvnResult result = client.run({QStringLiteral("checkout"), repositoryUrl, workingCopyPath}, temporaryDir.path());
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    QFile file(QDir(workingCopyPath).absoluteFilePath(QStringLiteral("file.txt")));
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    QVERIFY(file.write("content\n") > 0);
+    file.close();
+
+    result = client.run({QStringLiteral("add"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("commit"), QStringLiteral("-m"), QStringLiteral("initial"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("lock"), QStringLiteral("-m"), QStringLiteral("editing"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("status")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+    QVector<SvnStatus> statuses = client.parseStatus(result.standardOutput);
+    QCOMPARE(statuses.size(), 1);
+    QCOMPARE(statuses.at(0).code, QStringLiteral("K"));
+    QCOMPARE(statuses.at(0).path, QStringLiteral("file.txt"));
+
+    result = client.run({QStringLiteral("unlock"), QStringLiteral("file.txt")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+
+    result = client.run({QStringLiteral("status")}, workingCopyPath);
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+    statuses = client.parseStatus(result.standardOutput);
+    QCOMPARE(statuses.size(), 0);
 }
 
 void SvnClientTests::runHandlesRemoteRepositoryEditingWorkflow()

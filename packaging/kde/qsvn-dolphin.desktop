@@ -2,7 +2,7 @@
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
 MimeType=inode/directory;all/all;
-Actions=Open;Status;Update;Commit;Add;Ignore;Copy;Delete;Rename;Revert;Cleanup;Conflicts;Diff;Log;Blame;Properties;
+Actions=Open;Status;CheckRepository;Export;Import;Update;UpdateRevision;Commit;Add;Ignore;Copy;Delete;Rename;Revert;Lock;Unlock;Cleanup;Conflicts;Diff;Log;Blame;Properties;
 X-KDE-Priority=TopLevel
 X-KDE-Submenu=qsvn
 
@@ -16,10 +16,30 @@ Name=Show SVN Status
 Icon=view-refresh
 Exec=qsvn --status %f
 
+[Desktop Action CheckRepository]
+Name=SVN Check Repository
+Icon=network-server
+Exec=qsvn --check-repository %f
+
+[Desktop Action Export]
+Name=SVN Export
+Icon=document-export
+Exec=qsvn --export %f
+
+[Desktop Action Import]
+Name=SVN Import
+Icon=document-import
+Exec=qsvn --import %f
+
 [Desktop Action Update]
 Name=SVN Update
 Icon=download
 Exec=qsvn --update %f
+
+[Desktop Action UpdateRevision]
+Name=SVN Update to Revision
+Icon=view-calendar
+Exec=qsvn --update-revision %f
 
 [Desktop Action Commit]
 Name=SVN Commit
@@ -55,6 +75,16 @@ Exec=qsvn --rename %f
 Name=SVN Revert
 Icon=edit-undo
 Exec=qsvn --revert %f
+
+[Desktop Action Lock]
+Name=SVN Lock
+Icon=object-locked
+Exec=qsvn --lock %f
+
+[Desktop Action Unlock]
+Name=SVN Unlock
+Icon=object-unlocked
+Exec=qsvn --unlock %f
 
 [Desktop Action Cleanup]
 Name=SVN Cleanup

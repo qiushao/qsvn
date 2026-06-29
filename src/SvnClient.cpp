@@ -111,13 +111,27 @@ QVector<SvnStatus> SvnClient::parseStatus(const QString &output) const
     for (QString line : lines) {
         line.remove('\r');
         const QString trimmed = line.trimmed();
-        if (trimmed.isEmpty() || trimmed.startsWith('>') || line.startsWith(QStringLiteral("--- Changelist"))) {
+        if (trimmed.isEmpty() || trimmed.startsWith('>') || line.startsWith(QStringLiteral("--- Changelist")) || line.startsWith(QStringLiteral("Status against revision:"))) {
             continue;
         }
 
         SvnStatus status;
         status.code = line.left(7).trimmed();
         status.path = line.length() > 8 ? line.mid(8).trimmed() : QString();
+        QString remoteStatus = line.length() > 7 ? line.mid(7).trimmed() : QString();
+        if (remoteStatus.startsWith('*')) {
+            status.code = status.code.isEmpty() ? QStringLiteral("*") : status.code + QStringLiteral(" *");
+            remoteStatus = remoteStatus.mid(1).trimmed();
+        }
+
+        int revisionEnd = 0;
+        while (revisionEnd < remoteStatus.size() && remoteStatus.at(revisionEnd).isDigit()) {
+            ++revisionEnd;
+        }
+        if (revisionEnd > 0 && revisionEnd < remoteStatus.size() && remoteStatus.at(revisionEnd).isSpace()) {
+            status.path = remoteStatus.mid(revisionEnd).trimmed();
+        }
+
         if (!status.path.isEmpty()) {
             statuses.push_back(status);
         }

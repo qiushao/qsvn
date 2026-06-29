@@ -29,8 +29,20 @@ int main(int argc, char *argv[])
             case CommandLineAction::Status:
                 window.openPath(commandLine.path);
                 break;
+            case CommandLineAction::CheckRepository:
+                window.checkRepositoryPath(commandLine.path);
+                break;
+            case CommandLineAction::Export:
+                window.exportPath(commandLine.path);
+                break;
+            case CommandLineAction::Import:
+                window.importPath(commandLine.path);
+                break;
             case CommandLineAction::Update:
                 window.updatePath(commandLine.path);
+                break;
+            case CommandLineAction::UpdateRevision:
+                window.updateToRevisionPath(commandLine.path);
                 break;
             case CommandLineAction::Commit:
                 window.commitPath(commandLine.path);
@@ -52,6 +64,12 @@ int main(int argc, char *argv[])
                 break;
             case CommandLineAction::Revert:
                 window.revertPath(commandLine.path);
+                break;
+            case CommandLineAction::Lock:
+                window.lockPath(commandLine.path);
+                break;
+            case CommandLineAction::Unlock:
+                window.unlockPath(commandLine.path);
                 break;
             case CommandLineAction::Cleanup:
                 window.cleanupPath(commandLine.path);
