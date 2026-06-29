@@ -10,6 +10,7 @@
 BranchTagDialog::BranchTagDialog(QWidget *parent)
     : QDialog(parent)
 {
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     setWindowTitle(QStringLiteral("Branch / Tag"));
     resize(680, 360);
 

@@ -13,6 +13,7 @@
 ExportDialog::ExportDialog(QWidget *parent)
     : QDialog(parent)
 {
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     setWindowTitle(QStringLiteral("Export"));
     setMinimumWidth(640);
 

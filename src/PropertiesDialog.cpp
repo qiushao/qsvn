@@ -17,6 +17,7 @@ PropertiesDialog::PropertiesDialog(SvnClient *svnClient, const QString &workingD
     , m_workingDirectory(workingDirectory)
     , m_targetPath(targetPath)
 {
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     setWindowTitle(QStringLiteral("Properties"));
     resize(760, 560);
 

@@ -1162,6 +1162,7 @@ void MainWindow::appendResult(const SvnResult &result)
 void MainWindow::showTextDialog(const QString &title, const QString &text)
 {
     auto *dialog = new QDialog(this);
+    dialog->setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     dialog->setWindowTitle(title);
     dialog->resize(900, 650);
 

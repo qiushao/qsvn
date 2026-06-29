@@ -12,6 +12,7 @@
 CheckoutDialog::CheckoutDialog(QWidget *parent)
     : QDialog(parent)
 {
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     setWindowTitle(QStringLiteral("Checkout"));
     setMinimumWidth(560);
 

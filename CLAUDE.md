@@ -50,7 +50,7 @@ There is no separation into libraries. Key layers:
   is the uniform return type (`ok()` = started && !timedOut && exitCode==0); `combinedOutput()` merges
   stdout+stderr for display. The displayed command line masks `--password` values.
 
-- **`MainWindow`** (`src/MainWindow.{h,cpp}`, ~1400 lines) — the entire UI and orchestration. Owns an
+- **`MainWindow`** (`src/MainWindow.{h,cpp}`, ~2000 lines) — the entire UI and orchestration. Owns an
   `SvnClient m_svn` and `ApplicationSettings m_settings`. Pattern for every operation: build a
   `QStringList` of `svn` subcommand args, call `runWorkingCopyCommand(args, refreshAfter)` (or
   `loadStatus` for status views), then `appendResult(result)` echoes the command+output into the

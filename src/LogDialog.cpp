@@ -14,6 +14,7 @@ LogDialog::LogDialog(const QVector<SvnLogEntry> &entries, QWidget *parent)
     : QDialog(parent)
     , m_entries(entries)
 {
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     setWindowTitle(QStringLiteral("Log"));
     resize(920, 680);
 

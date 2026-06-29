@@ -9,6 +9,7 @@
 SwitchDialog::SwitchDialog(QWidget *parent)
     : QDialog(parent)
 {
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     setWindowTitle(QStringLiteral("Switch"));
     setMinimumWidth(620);
 

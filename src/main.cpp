@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     const CommandLineRequest commandLine = parseCommandLine(QCoreApplication::arguments());
 
     MainWindow window;
-    window.show();
+    window.showMaximized();
 
     if (!commandLine.ok()) {
         QTimer::singleShot(0, &window, [&window, commandLine]() {

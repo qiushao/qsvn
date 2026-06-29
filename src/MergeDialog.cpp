@@ -10,6 +10,7 @@
 MergeDialog::MergeDialog(QWidget *parent)
     : QDialog(parent)
 {
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
     setWindowTitle(QStringLiteral("Merge"));
     setMinimumWidth(620);
 
