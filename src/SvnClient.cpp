@@ -62,22 +62,32 @@ QStringList SvnClient::buildArguments(const QStringList &arguments) const
 
 SvnResult SvnClient::run(const QStringList &arguments, const QString &workingDirectory) const
 {
+    const QStringList actualArguments = buildArguments(arguments);
+    return runExecutable(QStringLiteral("svn"), actualArguments, workingDirectory);
+}
+
+SvnResult SvnClient::runAdmin(const QStringList &arguments, const QString &workingDirectory) const
+{
+    return runExecutable(QStringLiteral("svnadmin"), arguments, workingDirectory);
+}
+
+SvnResult SvnClient::runExecutable(const QString &executableName, const QStringList &arguments, const QString &workingDirectory) const
+{
     SvnResult result;
 
-    const QString program = QStandardPaths::findExecutable(QStringLiteral("svn"));
+    const QString program = QStandardPaths::findExecutable(executableName);
     if (program.isEmpty()) {
-        result.standardError = QStringLiteral("svn executable was not found in PATH.");
+        result.standardError = executableName + QStringLiteral(" executable was not found in PATH.");
         return result;
     }
 
-    const QStringList actualArguments = buildArguments(arguments);
-    result.commandLine = commandLineForArguments(actualArguments);
+    result.commandLine = commandLineForArguments(executableName, arguments);
 
     QProcess process;
     if (!workingDirectory.isEmpty()) {
         process.setWorkingDirectory(workingDirectory);
     }
-    process.start(program, actualArguments);
+    process.start(program, arguments);
 
     result.started = process.waitForStarted();
     if (!result.started) {
@@ -99,7 +109,7 @@ SvnResult SvnClient::run(const QStringList &arguments, const QString &workingDir
         if (!result.standardError.isEmpty() && !result.standardError.endsWith('\n')) {
             result.standardError.append('\n');
         }
-        result.standardError.append(QStringLiteral("svn command timed out."));
+        result.standardError.append(executableName + QStringLiteral(" command timed out."));
     }
     return result;
 }
@@ -218,7 +228,7 @@ QVector<SvnProperty> SvnClient::parsePropertiesXml(const QString &output) const
     return properties;
 }
 
-QString SvnClient::commandLineForArguments(const QStringList &arguments) const
+QString SvnClient::commandLineForArguments(const QString &executableName, const QStringList &arguments) const
 {
     QStringList displayArguments;
     displayArguments.reserve(arguments.size());
@@ -229,7 +239,7 @@ QString SvnClient::commandLineForArguments(const QStringList &arguments) const
             displayArguments.push_back(quoteArgument(arguments.at(i)));
         }
     }
-    return QStringLiteral("svn ") + displayArguments.join(' ');
+    return executableName + QLatin1Char(' ') + displayArguments.join(' ');
 }
 
 QString SvnClient::quoteArgument(const QString &argument) const

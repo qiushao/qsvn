@@ -25,9 +25,18 @@ int main(int argc, char *argv[])
             switch (commandLine.action) {
             case CommandLineAction::None:
                 break;
+            case CommandLineAction::Settings:
+                window.showSettings();
+                break;
             case CommandLineAction::Open:
             case CommandLineAction::Status:
                 window.openPath(commandLine.path);
+                break;
+            case CommandLineAction::Checkout:
+                window.checkoutPath(commandLine.path);
+                break;
+            case CommandLineAction::CreateRepository:
+                window.createRepositoryPath(commandLine.path);
                 break;
             case CommandLineAction::CheckRepository:
                 window.checkRepositoryPath(commandLine.path);
@@ -37,6 +46,18 @@ int main(int argc, char *argv[])
                 break;
             case CommandLineAction::Import:
                 window.importPath(commandLine.path);
+                break;
+            case CommandLineAction::BranchTag:
+                window.branchTagPath(commandLine.path);
+                break;
+            case CommandLineAction::Switch:
+                window.switchPath(commandLine.path);
+                break;
+            case CommandLineAction::Relocate:
+                window.relocatePath(commandLine.path);
+                break;
+            case CommandLineAction::Merge:
+                window.mergePath(commandLine.path);
                 break;
             case CommandLineAction::Update:
                 window.updatePath(commandLine.path);
@@ -65,6 +86,15 @@ int main(int argc, char *argv[])
             case CommandLineAction::Revert:
                 window.revertPath(commandLine.path);
                 break;
+            case CommandLineAction::SetChangelist:
+                window.setChangelistPath(commandLine.path);
+                break;
+            case CommandLineAction::RemoveChangelist:
+                window.removeChangelistPath(commandLine.path);
+                break;
+            case CommandLineAction::Resolve:
+                window.resolvePath(commandLine.path);
+                break;
             case CommandLineAction::Lock:
                 window.lockPath(commandLine.path);
                 break;
@@ -76,6 +106,12 @@ int main(int argc, char *argv[])
                 break;
             case CommandLineAction::Diff:
                 window.showDiffForPath(commandLine.path);
+                break;
+            case CommandLineAction::CreatePatch:
+                window.createPatchPath(commandLine.path);
+                break;
+            case CommandLineAction::ApplyPatch:
+                window.applyPatchPath(commandLine.path);
                 break;
             case CommandLineAction::Log:
                 window.showLogForPath(commandLine.path);
@@ -89,8 +125,15 @@ int main(int argc, char *argv[])
             case CommandLineAction::Conflicts:
                 window.showConflictsForPath(commandLine.path);
                 break;
+            case CommandLineAction::EditConflict:
+                window.editConflictPath(commandLine.path);
+                break;
             case CommandLineAction::RepoBrowser:
-                window.showRepositoryBrowser();
+                if (commandLine.path.isEmpty()) {
+                    window.showRepositoryBrowser();
+                } else {
+                    window.showRepositoryBrowserForPath(commandLine.path);
+                }
                 break;
             }
         });

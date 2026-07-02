@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+
+selected_paths=${NAUTILUS_SCRIPT_SELECTED_FILE_PATHS:-}
+path=${selected_paths%%'
+'*}
+if [ -z "$path" ]; then
+    path=${1:-"$PWD"}
+fi
+
+exec qsvn --merge "$path"

@@ -68,6 +68,11 @@ QString RepositoryBrowserDialog::checkoutUrl() const
     return m_checkoutUrl;
 }
 
+void RepositoryBrowserDialog::setRepositoryUrl(const QString &url)
+{
+    m_urlEdit->setText(url);
+}
+
 void RepositoryBrowserDialog::listUrl()
 {
     const QString url = m_urlEdit->text().trimmed();

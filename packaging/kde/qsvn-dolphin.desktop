@@ -2,7 +2,7 @@
 Type=Service
 ServiceTypes=KonqPopupMenu/Plugin
 MimeType=inode/directory;all/all;
-Actions=Open;Status;CheckRepository;Export;Import;Update;UpdateRevision;Commit;Add;Ignore;Copy;Delete;Rename;Revert;Lock;Unlock;Cleanup;Conflicts;Diff;Log;Blame;Properties;
+Actions=Open;Settings;Checkout;CreateRepository;RepoBrowser;Status;CheckRepository;Export;Import;BranchTag;Switch;Relocate;Merge;Update;UpdateRevision;Commit;Add;Ignore;Copy;Delete;Rename;Revert;SetChangelist;RemoveChangelist;Resolve;Lock;Unlock;Cleanup;Conflicts;EditConflict;Diff;CreatePatch;ApplyPatch;Log;Blame;Properties;
 X-KDE-Priority=TopLevel
 X-KDE-Submenu=qsvn
 
@@ -10,6 +10,26 @@ X-KDE-Submenu=qsvn
 Name=Open in qsvn
 Icon=folder-svn
 Exec=qsvn --open %f
+
+[Desktop Action Settings]
+Name=qsvn Settings
+Icon=preferences-system
+Exec=qsvn --settings
+
+[Desktop Action Checkout]
+Name=SVN Checkout
+Icon=folder-download
+Exec=qsvn --checkout %f
+
+[Desktop Action CreateRepository]
+Name=SVN Create Repository Here
+Icon=folder-new
+Exec=qsvn --create-repository %f
+
+[Desktop Action RepoBrowser]
+Name=SVN Repo Browser
+Icon=folder-remote
+Exec=qsvn --repo-browser %f
 
 [Desktop Action Status]
 Name=Show SVN Status
@@ -30,6 +50,26 @@ Exec=qsvn --export %f
 Name=SVN Import
 Icon=document-import
 Exec=qsvn --import %f
+
+[Desktop Action BranchTag]
+Name=SVN Branch / Tag
+Icon=vcs-branch
+Exec=qsvn --branch-tag %f
+
+[Desktop Action Switch]
+Name=SVN Switch
+Icon=go-jump
+Exec=qsvn --switch %f
+
+[Desktop Action Relocate]
+Name=SVN Relocate
+Icon=network-connect
+Exec=qsvn --relocate %f
+
+[Desktop Action Merge]
+Name=SVN Merge
+Icon=merge
+Exec=qsvn --merge %f
 
 [Desktop Action Update]
 Name=SVN Update
@@ -76,6 +116,21 @@ Name=SVN Revert
 Icon=edit-undo
 Exec=qsvn --revert %f
 
+[Desktop Action SetChangelist]
+Name=SVN Set Changelist
+Icon=view-list-details
+Exec=qsvn --set-changelist %f
+
+[Desktop Action RemoveChangelist]
+Name=SVN Remove Changelist
+Icon=list-remove
+Exec=qsvn --remove-changelist %f
+
+[Desktop Action Resolve]
+Name=SVN Resolve
+Icon=dialog-ok-apply
+Exec=qsvn --resolve %f
+
 [Desktop Action Lock]
 Name=SVN Lock
 Icon=object-locked
@@ -96,10 +151,25 @@ Name=SVN Conflicts
 Icon=dialog-warning
 Exec=qsvn --conflicts %f
 
+[Desktop Action EditConflict]
+Name=SVN Edit Conflict
+Icon=tools-wizard
+Exec=qsvn --edit-conflict %f
+
 [Desktop Action Diff]
 Name=SVN Diff
 Icon=view-split-left-right
 Exec=qsvn --diff %f
+
+[Desktop Action CreatePatch]
+Name=SVN Create Patch
+Icon=document-save
+Exec=qsvn --create-patch %f
+
+[Desktop Action ApplyPatch]
+Name=SVN Apply Patch
+Icon=document-open
+Exec=qsvn --apply-patch %f
 
 [Desktop Action Log]
 Name=SVN Log

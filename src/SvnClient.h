@@ -52,12 +52,14 @@ public:
     SvnOptions options() const;
     QStringList buildArguments(const QStringList &arguments) const;
     SvnResult run(const QStringList &arguments, const QString &workingDirectory = QString()) const;
+    SvnResult runAdmin(const QStringList &arguments, const QString &workingDirectory = QString()) const;
     QVector<SvnStatus> parseStatus(const QString &output) const;
     QVector<SvnLogEntry> parseLogXml(const QString &output) const;
     QVector<SvnProperty> parsePropertiesXml(const QString &output) const;
 
 private:
-    QString commandLineForArguments(const QStringList &arguments) const;
+    SvnResult runExecutable(const QString &executableName, const QStringList &arguments, const QString &workingDirectory = QString()) const;
+    QString commandLineForArguments(const QString &executableName, const QStringList &arguments) const;
     QString quoteArgument(const QString &argument) const;
 
     SvnOptions m_options;

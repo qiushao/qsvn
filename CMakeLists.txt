@@ -6,10 +6,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 COMPONENTS Test)
+find_package(Qt5 REQUIRED COMPONENTS Widgets)
+find_package(Qt5 COMPONENTS Test)
 
-qt_add_executable(qsvn
+add_executable(qsvn
     src/main.cpp
     src/ApplicationSettings.h
     src/ApplicationSettings.cpp
@@ -49,13 +49,15 @@ qt_add_executable(qsvn
     src/SwitchDialog.cpp
 )
 
-target_link_libraries(qsvn PRIVATE Qt6::Widgets)
+target_link_libraries(qsvn PRIVATE Qt5::Widgets)
 
 include(CTest)
 
-if(BUILD_TESTING AND TARGET Qt6::Test)
-    qt_add_executable(svnclient_tests
+if(BUILD_TESTING AND TARGET Qt5::Test)
+    add_executable(svnclient_tests
         tests/svnclient_tests.cpp
+        src/ApplicationSettings.h
+        src/ApplicationSettings.cpp
         src/CommandLine.h
         src/CommandLine.cpp
         src/ExternalToolCommand.h
@@ -65,7 +67,7 @@ if(BUILD_TESTING AND TARGET Qt6::Test)
     )
 
     target_include_directories(svnclient_tests PRIVATE src)
-    target_link_libraries(svnclient_tests PRIVATE Qt6::Test)
+    target_link_libraries(svnclient_tests PRIVATE Qt5::Test)
 
     add_test(NAME svnclient_tests COMMAND svnclient_tests)
 endif()
@@ -75,10 +77,18 @@ install(FILES packaging/kde/qsvn-dolphin.desktop DESTINATION share/kio/serviceme
 install(FILES packaging/thunar/uca.xml DESTINATION share/qsvn/thunar)
 install(PROGRAMS
     "packaging/nautilus/qsvn/Open in qsvn"
+    "packaging/nautilus/qsvn/Settings"
+    "packaging/nautilus/qsvn/Checkout"
+    "packaging/nautilus/qsvn/Create Repository Here"
+    "packaging/nautilus/qsvn/Repo Browser"
     "packaging/nautilus/qsvn/Show Status"
     "packaging/nautilus/qsvn/Check Repository"
     "packaging/nautilus/qsvn/Export"
     "packaging/nautilus/qsvn/Import"
+    "packaging/nautilus/qsvn/Branch Tag"
+    "packaging/nautilus/qsvn/Switch"
+    "packaging/nautilus/qsvn/Relocate"
+    "packaging/nautilus/qsvn/Merge"
     "packaging/nautilus/qsvn/Update"
     "packaging/nautilus/qsvn/Update to Revision"
     "packaging/nautilus/qsvn/Commit"
@@ -88,11 +98,17 @@ install(PROGRAMS
     "packaging/nautilus/qsvn/Delete"
     "packaging/nautilus/qsvn/Rename"
     "packaging/nautilus/qsvn/Revert"
+    "packaging/nautilus/qsvn/Set Changelist"
+    "packaging/nautilus/qsvn/Remove Changelist"
+    "packaging/nautilus/qsvn/Resolve"
     "packaging/nautilus/qsvn/Lock"
     "packaging/nautilus/qsvn/Unlock"
     "packaging/nautilus/qsvn/Cleanup"
     "packaging/nautilus/qsvn/Conflicts"
+    "packaging/nautilus/qsvn/Edit Conflict"
     "packaging/nautilus/qsvn/Diff"
+    "packaging/nautilus/qsvn/Create Patch"
+    "packaging/nautilus/qsvn/Apply Patch"
     "packaging/nautilus/qsvn/Log"
     "packaging/nautilus/qsvn/Blame"
     "packaging/nautilus/qsvn/Properties"

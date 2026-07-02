@@ -1,13 +1,16 @@
+#include "ApplicationSettings.h"
 #include "ExternalToolCommand.h"
 #include "CommandLine.h"
 #include "SvnClient.h"
 
 #include <QtTest/QtTest>
 
+#include <QCoreApplication>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QProcess>
+#include <QSettings>
 #include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QUrl>
@@ -18,9 +21,11 @@ class SvnClientTests : public QObject {
 private slots:
     void parseCommandLineReadsActions();
     void parseCommandLineReportsMissingPath();
+    void loadSettingsUsesMeldAsDefaultDiffTool();
     void buildExternalToolCommandReplacesPlaceholders();
     void buildExternalToolCommandAppendsDefaultArgumentsWithoutPlaceholders();
     void buildArgumentsAddsAuthenticationOptions();
+    void runAdminCreatesRepository();
     void parseStatusReadsCodesAndPaths();
     void parseLogXmlReadsEntriesAndChangedPaths();
     void parsePropertiesXmlReadsNamesAndValues();
@@ -50,10 +55,25 @@ void SvnClientTests::parseCommandLineReadsActions()
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Diff));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
 
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--settings")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Settings));
+    QCOMPARE(request.path, QString());
+
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--update"), QStringLiteral("/tmp/wc")});
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Update));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--checkout"), QStringLiteral("/tmp/checkout")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Checkout));
+    QCOMPARE(request.path, QStringLiteral("/tmp/checkout"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--create-repository"), QStringLiteral("/tmp/repo")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::CreateRepository));
+    QCOMPARE(request.path, QStringLiteral("/tmp/repo"));
 
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--update-revision"), QStringLiteral("/tmp/wc")});
     QVERIFY(request.ok());
@@ -74,6 +94,26 @@ void SvnClientTests::parseCommandLineReadsActions()
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Import));
     QCOMPARE(request.path, QStringLiteral("/tmp/project"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--branch-tag"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::BranchTag));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--switch"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Switch));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--relocate"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Relocate));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--merge"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Merge));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
 
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--commit"), QStringLiteral("/tmp/wc")});
     QVERIFY(request.ok());
@@ -110,6 +150,21 @@ void SvnClientTests::parseCommandLineReadsActions()
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Revert));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
 
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--set-changelist"), QStringLiteral("/tmp/wc/file.txt")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::SetChangelist));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--remove-changelist"), QStringLiteral("/tmp/wc/file.txt")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::RemoveChangelist));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--resolve"), QStringLiteral("/tmp/wc/file.txt")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Resolve));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
+
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--lock"), QStringLiteral("/tmp/wc/file.txt")});
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Lock));
@@ -125,6 +180,16 @@ void SvnClientTests::parseCommandLineReadsActions()
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Cleanup));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
 
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--create-patch"), QStringLiteral("/tmp/wc/file.txt")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::CreatePatch));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--apply-patch"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::ApplyPatch));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
+
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--properties"), QStringLiteral("/tmp/wc/file.txt")});
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Properties));
@@ -135,10 +200,20 @@ void SvnClientTests::parseCommandLineReadsActions()
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Conflicts));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
 
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--edit-conflict"), QStringLiteral("/tmp/wc/file.txt")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::EditConflict));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
+
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--repo-browser")});
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::RepoBrowser));
     QCOMPARE(request.path, QString());
+
+    request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--repo-browser"), QStringLiteral("/tmp/wc")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::RepoBrowser));
+    QCOMPARE(request.path, QStringLiteral("/tmp/wc"));
 
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("/tmp/wc")});
     QVERIFY(request.ok());
@@ -152,6 +227,29 @@ void SvnClientTests::parseCommandLineReportsMissingPath()
     QVERIFY(!request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Log));
     QVERIFY(!request.error.isEmpty());
+}
+
+void SvnClientTests::loadSettingsUsesMeldAsDefaultDiffTool()
+{
+    QTemporaryDir settingsDir;
+    QVERIFY(settingsDir.isValid());
+
+    const QString oldOrganizationName = QCoreApplication::organizationName();
+    const QString oldApplicationName = QCoreApplication::applicationName();
+    const QSettings::Format oldFormat = QSettings::defaultFormat();
+
+    QSettings::setDefaultFormat(QSettings::IniFormat);
+    QSettings::setPath(QSettings::IniFormat, QSettings::UserScope, settingsDir.path());
+    QCoreApplication::setOrganizationName(QStringLiteral("qsvn-tests"));
+    QCoreApplication::setApplicationName(QStringLiteral("settings-defaults"));
+
+    QSettings().clear();
+    const ApplicationSettings settings = ApplicationSettings::load();
+    QCOMPARE(settings.externalDiffCommand, QStringLiteral("meld {base} {working}"));
+
+    QCoreApplication::setOrganizationName(oldOrganizationName);
+    QCoreApplication::setApplicationName(oldApplicationName);
+    QSettings::setDefaultFormat(oldFormat);
 }
 
 void SvnClientTests::buildExternalToolCommandReplacesPlaceholders()
@@ -212,6 +310,23 @@ void SvnClientTests::buildArgumentsAddsAuthenticationOptions()
     QCOMPARE(arguments.at(arguments.indexOf(QStringLiteral("--password")) + 1), QStringLiteral("secret"));
     QVERIFY(arguments.contains(QStringLiteral("--no-auth-cache")));
     QVERIFY(arguments.contains(QStringLiteral("--trust-server-cert")));
+}
+
+void SvnClientTests::runAdminCreatesRepository()
+{
+    if (QStandardPaths::findExecutable(QStringLiteral("svnadmin")).isEmpty()) {
+        QSKIP("svnadmin executable is not available");
+    }
+
+    QTemporaryDir temporaryDir;
+    QVERIFY(temporaryDir.isValid());
+
+    const QString repositoryPath = QDir(temporaryDir.path()).absoluteFilePath(QStringLiteral("repo"));
+    SvnClient client;
+    const SvnResult result = client.runAdmin({QStringLiteral("create"), repositoryPath});
+    QVERIFY2(result.ok(), qPrintable(result.combinedOutput()));
+    QCOMPARE(result.commandLine, QStringLiteral("svnadmin create ") + repositoryPath);
+    QVERIFY(QFileInfo::exists(QDir(repositoryPath).absoluteFilePath(QStringLiteral("format"))));
 }
 
 void SvnClientTests::parseStatusReadsCodesAndPaths()

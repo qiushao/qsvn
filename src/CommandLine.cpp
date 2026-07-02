@@ -23,6 +23,13 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
     const QString command = arguments.at(1);
     if (command == QStringLiteral("--repo-browser")) {
         request.action = CommandLineAction::RepoBrowser;
+        if (arguments.size() > 2) {
+            request.path = arguments.at(2);
+        }
+        return request;
+    }
+    if (command == QStringLiteral("--settings")) {
+        request.action = CommandLineAction::Settings;
         return request;
     }
     if (command == QStringLiteral("--open")) {
@@ -32,6 +39,16 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
     }
     if (command == QStringLiteral("--status")) {
         request.action = CommandLineAction::Status;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--checkout")) {
+        request.action = CommandLineAction::Checkout;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--create-repository")) {
+        request.action = CommandLineAction::CreateRepository;
         request.path = readPath(1);
         return request;
     }
@@ -47,6 +64,26 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
     }
     if (command == QStringLiteral("--import")) {
         request.action = CommandLineAction::Import;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--branch-tag")) {
+        request.action = CommandLineAction::BranchTag;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--switch")) {
+        request.action = CommandLineAction::Switch;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--relocate")) {
+        request.action = CommandLineAction::Relocate;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--merge")) {
+        request.action = CommandLineAction::Merge;
         request.path = readPath(1);
         return request;
     }
@@ -95,6 +132,21 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
         request.path = readPath(1);
         return request;
     }
+    if (command == QStringLiteral("--set-changelist")) {
+        request.action = CommandLineAction::SetChangelist;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--remove-changelist")) {
+        request.action = CommandLineAction::RemoveChangelist;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--resolve")) {
+        request.action = CommandLineAction::Resolve;
+        request.path = readPath(1);
+        return request;
+    }
     if (command == QStringLiteral("--lock")) {
         request.action = CommandLineAction::Lock;
         request.path = readPath(1);
@@ -115,6 +167,16 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
         request.path = readPath(1);
         return request;
     }
+    if (command == QStringLiteral("--create-patch")) {
+        request.action = CommandLineAction::CreatePatch;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--apply-patch")) {
+        request.action = CommandLineAction::ApplyPatch;
+        request.path = readPath(1);
+        return request;
+    }
     if (command == QStringLiteral("--log")) {
         request.action = CommandLineAction::Log;
         request.path = readPath(1);
@@ -132,6 +194,11 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
     }
     if (command == QStringLiteral("--conflicts")) {
         request.action = CommandLineAction::Conflicts;
+        request.path = readPath(1);
+        return request;
+    }
+    if (command == QStringLiteral("--edit-conflict")) {
+        request.action = CommandLineAction::EditConflict;
         request.path = readPath(1);
         return request;
     }

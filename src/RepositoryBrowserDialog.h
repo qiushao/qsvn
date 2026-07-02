@@ -15,6 +15,7 @@ class RepositoryBrowserDialog : public QDialog {
 public:
     explicit RepositoryBrowserDialog(const SvnClient *svnClient, QWidget *parent = nullptr);
 
+    void setRepositoryUrl(const QString &url);
     QString checkoutUrl() const;
 
 signals:

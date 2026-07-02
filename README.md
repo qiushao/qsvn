@@ -1,6 +1,6 @@
 # qsvn
 
-qsvn is a small Qt 6 SVN desktop client for Linux. It follows the main
+qsvn is a small Qt 5 SVN desktop client for Linux. It follows the main
 TortoiseSVN workflows as a standalone application instead of a file manager
 shell extension.
 
@@ -8,6 +8,7 @@ Current scope:
 
 - Open an existing SVN working copy.
 - Checkout a repository URL.
+- Create a local repository with `svnadmin create`.
 - Export a repository URL or working copy path.
 - Import a local directory into a repository URL.
 - Browse a repository URL with `svn list`.
@@ -28,7 +29,7 @@ Current scope:
 - View, set, and delete SVN properties on selected paths.
 - Assign and remove SVN changelists for selected paths.
 - Configure SVN authentication arguments for non-interactive commands.
-- Configure an external diff tool such as `meld {base} {working}`.
+- Use `meld {base} {working}` as the default external diff tool and allow configuring another one.
 - Configure an external merge tool and launch it for conflicted files.
 - Launch common actions from CLI arguments for file manager integration.
 - Show command output in the main window.
@@ -52,9 +53,16 @@ Examples:
 
 ```sh
 qsvn --open /path/to/working-copy
+qsvn --settings
+qsvn --checkout /path/to/checkout-directory
+qsvn --create-repository /path/to/new-repository
 qsvn --check-repository /path/to/working-copy
 qsvn --export /path/to/working-copy
 qsvn --import /path/to/local-directory
+qsvn --branch-tag /path/to/working-copy
+qsvn --switch /path/to/working-copy
+qsvn --relocate /path/to/working-copy
+qsvn --merge /path/to/working-copy
 qsvn --update /path/to/working-copy
 qsvn --update-revision /path/to/working-copy
 qsvn --commit /path/to/working-copy
@@ -64,15 +72,21 @@ qsvn --copy /path/to/working-copy/file.cpp
 qsvn --delete /path/to/working-copy/old-file.cpp
 qsvn --rename /path/to/working-copy/file.cpp
 qsvn --revert /path/to/working-copy/file.cpp
+qsvn --set-changelist /path/to/working-copy/file.cpp
+qsvn --remove-changelist /path/to/working-copy/file.cpp
+qsvn --resolve /path/to/working-copy/file.cpp
 qsvn --lock /path/to/working-copy/file.cpp
 qsvn --unlock /path/to/working-copy/file.cpp
 qsvn --cleanup /path/to/working-copy
 qsvn --conflicts /path/to/working-copy
+qsvn --edit-conflict /path/to/working-copy/file.cpp
 qsvn --diff /path/to/working-copy/file.cpp
+qsvn --create-patch /path/to/working-copy/file.cpp
+qsvn --apply-patch /path/to/working-copy
 qsvn --log /path/to/working-copy
 qsvn --blame /path/to/working-copy/file.cpp
 qsvn --properties /path/to/working-copy/file.cpp
-qsvn --repo-browser
+qsvn --repo-browser /path/to/working-copy
 ```
 
 The project installs a KDE/Dolphin service menu prototype at

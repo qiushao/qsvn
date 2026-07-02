@@ -11,7 +11,7 @@ ApplicationSettings ApplicationSettings::load()
     values.svn.password = settings.value(QStringLiteral("svn/password")).toString();
     values.svn.useAuthCache = settings.value(QStringLiteral("svn/useAuthCache"), true).toBool();
     values.svn.trustServerCertificate = settings.value(QStringLiteral("svn/trustServerCertificate"), false).toBool();
-    values.externalDiffCommand = settings.value(QStringLiteral("tools/externalDiffCommand")).toString();
+    values.externalDiffCommand = settings.value(QStringLiteral("tools/externalDiffCommand"), QStringLiteral("meld {base} {working}")).toString();
     values.externalMergeCommand = settings.value(QStringLiteral("tools/externalMergeCommand")).toString();
     return values;
 }

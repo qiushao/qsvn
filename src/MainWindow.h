@@ -20,8 +20,15 @@ class MainWindow : public QMainWindow {
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    void showSettings();
     bool openPath(const QString &path);
+    bool checkoutPath(const QString &path);
+    bool createRepositoryPath(const QString &path);
     bool checkRepositoryPath(const QString &path);
+    bool branchTagPath(const QString &path);
+    bool switchPath(const QString &path);
+    bool relocatePath(const QString &path);
+    bool mergePath(const QString &path);
     bool updatePath(const QString &path);
     bool updateToRevisionPath(const QString &path);
     bool commitPath(const QString &path);
@@ -31,16 +38,23 @@ public:
     bool deletePath(const QString &path);
     bool renamePath(const QString &path);
     bool revertPath(const QString &path);
+    bool setChangelistPath(const QString &path);
+    bool removeChangelistPath(const QString &path);
+    bool resolvePath(const QString &path);
     bool lockPath(const QString &path);
     bool unlockPath(const QString &path);
     bool cleanupPath(const QString &path);
     bool exportPath(const QString &path);
     bool importPath(const QString &path);
     bool showDiffForPath(const QString &path);
+    bool createPatchPath(const QString &path);
+    bool applyPatchPath(const QString &path);
     bool showLogForPath(const QString &path);
     bool showBlameForPath(const QString &path);
     bool showPropertiesForPath(const QString &path);
     bool showConflictsForPath(const QString &path);
+    bool editConflictPath(const QString &path);
+    bool showRepositoryBrowserForPath(const QString &path);
     void showRepositoryBrowser();
 
 private:
@@ -61,16 +75,22 @@ private:
     void appendResult(const SvnResult &result);
     void showTextDialog(const QString &title, const QString &text);
     void runWorkingCopyCommand(const QStringList &arguments, bool refreshAfter);
-    void runCheckout(const QString &url, const QString &target);
+    bool runCheckout(const QString &url, const QString &target);
+    bool setChangelistForPaths(const QStringList &paths);
+    bool removeChangelistForPaths(const QStringList &paths);
+    bool resolvePaths(const QStringList &paths);
+    bool createPatchForPaths(const QStringList &paths);
+    bool applyPatchFromDialog();
     bool launchExternalDiff(const QString &path);
     bool launchExternalMerge(const QString &path);
 
     void openWorkingCopy();
     void openSettings();
     void checkout();
+    void createRepository();
     void exportProject();
     void importProject();
-    void browseRepository();
+    void browseRepository(const QString &initialUrl = QString());
     void branchOrTag();
     void switchWorkingCopy();
     void relocateWorkingCopy();
@@ -115,6 +135,7 @@ private:
     QAction *m_openAction = nullptr;
     QAction *m_settingsAction = nullptr;
     QAction *m_checkoutAction = nullptr;
+    QAction *m_createRepositoryAction = nullptr;
     QAction *m_exportAction = nullptr;
     QAction *m_importAction = nullptr;
     QAction *m_repoBrowserAction = nullptr;

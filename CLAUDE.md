@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-qsvn is a Qt 6 (C++17) SVN desktop client for Linux. It is a standalone GUI that mirrors the
+qsvn is a Qt 5 (C++17) SVN desktop client for Linux. It is a standalone GUI that mirrors the
 TortoiseSVN workflows without being a file-manager shell extension. It shells out to the system
 `svn` executable as its backend — there is no libsvn linkage. All SVN operations are built as
 `svn` argument lists, run via `QProcess`, and the textual/XML output is parsed back into structs.
@@ -26,7 +26,7 @@ Run a single test (QtTest binary, names are exact test-slot names):
 ```
 
 The test binary `svnclient_tests` is only built when `BUILD_TESTING` is on (default via `include(CTest)`)
-and `Qt6::Test` is found. Many `runHandles*` tests create a real on-disk repo with `svnadmin create`
+and `Qt5::Test` is found. Many `runHandles*` tests create a real on-disk repo with `svnadmin create`
 inside a `QTemporaryDir` and drive it through `svn` — they `QSKIP` if `svn`/`svnadmin` are not on PATH,
 so the suite still passes on a machine without a subversion client. The pure parser tests
 (`parseStatus*`, `parseLogXml*`, `parsePropertiesXml*`, `buildArguments*`, `parseCommandLine*`,

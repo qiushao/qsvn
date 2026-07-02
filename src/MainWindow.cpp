@@ -59,6 +59,11 @@ MainWindow::MainWindow(QWidget *parent)
     statusBar()->showMessage(QStringLiteral("Open or checkout a working copy."));
 }
 
+void MainWindow::showSettings()
+{
+    openSettings();
+}
+
 bool MainWindow::openPath(const QString &path)
 {
     const QString root = workingCopyRootForPath(path);
@@ -71,6 +76,47 @@ bool MainWindow::openPath(const QString &path)
     return true;
 }
 
+bool MainWindow::checkoutPath(const QString &path)
+{
+    CheckoutDialog dialog(this);
+    dialog.setTargetPath(path);
+    if (dialog.exec() != QDialog::Accepted) {
+        return false;
+    }
+
+    return runCheckout(dialog.repositoryUrl(), dialog.targetPath());
+}
+
+bool MainWindow::createRepositoryPath(const QString &path)
+{
+    const QFileInfo targetInfo(path);
+    if (!targetInfo.exists() || !targetInfo.isDir()) {
+        QMessageBox::warning(this, QStringLiteral("Create Repository"), QStringLiteral("Select an existing directory for the repository."));
+        return false;
+    }
+
+    const QString repositoryPath = targetInfo.absoluteFilePath();
+    if (QMessageBox::question(this,
+                              QStringLiteral("Create Repository"),
+                              QStringLiteral("Create an SVN repository in '%1'?").arg(repositoryPath))
+        != QMessageBox::Yes) {
+        return false;
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.runAdmin({QStringLiteral("create"), repositoryPath});
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Create Repository failed"), result.combinedOutput());
+        return false;
+    }
+
+    statusBar()->showMessage(QStringLiteral("Repository created."));
+    return true;
+}
+
 bool MainWindow::checkRepositoryPath(const QString &path)
 {
     if (!openPath(path)) {
@@ -78,6 +124,46 @@ bool MainWindow::checkRepositoryPath(const QString &path)
     }
 
     return loadStatus({QStringLiteral("status"), QStringLiteral("-u")}, QStringLiteral("Check Repository failed"), QStringLiteral("%1 working copy status item(s)"));
+}
+
+bool MainWindow::branchTagPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    branchOrTag();
+    return true;
+}
+
+bool MainWindow::switchPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    switchWorkingCopy();
+    return true;
+}
+
+bool MainWindow::relocatePath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    relocateWorkingCopy();
+    return true;
+}
+
+bool MainWindow::mergePath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    mergeIntoWorkingCopy();
+    return true;
 }
 
 bool MainWindow::updatePath(const QString &path)
@@ -380,6 +466,33 @@ bool MainWindow::revertPath(const QString &path)
     return true;
 }
 
+bool MainWindow::setChangelistPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    return setChangelistForPaths({path});
+}
+
+bool MainWindow::removeChangelistPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    return removeChangelistForPaths({path});
+}
+
+bool MainWindow::resolvePath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    return resolvePaths({path});
+}
+
 bool MainWindow::lockPath(const QString &path)
 {
     if (!openPath(path)) {
@@ -514,6 +627,9 @@ bool MainWindow::showDiffForPath(const QString &path)
     if (!openPath(path)) {
         return false;
     }
+    if (launchExternalDiff(path)) {
+        return true;
+    }
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
     const SvnResult result = m_svn.run({QStringLiteral("diff"), QStringLiteral("--internal-diff"), path}, m_workingCopy);
@@ -527,6 +643,24 @@ bool MainWindow::showDiffForPath(const QString &path)
 
     showTextDialog(QStringLiteral("Diff"), result.standardOutput);
     return true;
+}
+
+bool MainWindow::createPatchPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    return createPatchForPaths({path});
+}
+
+bool MainWindow::applyPatchPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    return applyPatchFromDialog();
 }
 
 bool MainWindow::showLogForPath(const QString &path)
@@ -682,6 +816,26 @@ bool MainWindow::showConflictsForPath(const QString &path)
     return true;
 }
 
+bool MainWindow::editConflictPath(const QString &path)
+{
+    if (!openPath(path)) {
+        return false;
+    }
+
+    return launchExternalMerge(path);
+}
+
+bool MainWindow::showRepositoryBrowserForPath(const QString &path)
+{
+    QString initialUrl;
+    if (!path.trimmed().isEmpty() && openPath(path)) {
+        initialUrl = workingCopyUrl();
+    }
+
+    browseRepository(initialUrl);
+    return true;
+}
+
 void MainWindow::showRepositoryBrowser()
 {
     browseRepository();
@@ -698,6 +852,9 @@ void MainWindow::createActions()
     m_checkoutAction = new QAction(style()->standardIcon(QStyle::SP_DialogOpenButton), QStringLiteral("Checkout"), this);
     connect(m_checkoutAction, &QAction::triggered, this, &MainWindow::checkout);
 
+    m_createRepositoryAction = new QAction(QStringLiteral("Create Repository Here"), this);
+    connect(m_createRepositoryAction, &QAction::triggered, this, &MainWindow::createRepository);
+
     m_exportAction = new QAction(QStringLiteral("Export"), this);
     connect(m_exportAction, &QAction::triggered, this, &MainWindow::exportProject);
 
@@ -705,7 +862,9 @@ void MainWindow::createActions()
     connect(m_importAction, &QAction::triggered, this, &MainWindow::importProject);
 
     m_repoBrowserAction = new QAction(QStringLiteral("Repo Browser"), this);
-    connect(m_repoBrowserAction, &QAction::triggered, this, &MainWindow::browseRepository);
+    connect(m_repoBrowserAction, &QAction::triggered, this, [this]() {
+        browseRepository();
+    });
 
     m_branchTagAction = new QAction(QStringLiteral("Branch / Tag"), this);
     connect(m_branchTagAction, &QAction::triggered, this, &MainWindow::branchOrTag);
@@ -899,6 +1058,7 @@ void MainWindow::createMenus()
     auto *repositoryMenu = menuBar()->addMenu(QStringLiteral("Repository"));
     repositoryMenu->addAction(m_openAction);
     repositoryMenu->addAction(m_checkoutAction);
+    repositoryMenu->addAction(m_createRepositoryAction);
     repositoryMenu->addAction(m_exportAction);
     repositoryMenu->addAction(m_importAction);
     repositoryMenu->addAction(m_repoBrowserAction);
@@ -951,6 +1111,7 @@ void MainWindow::createToolBar()
     toolbar->addAction(m_settingsAction);
     toolbar->addSeparator();
     toolbar->addAction(m_checkoutAction);
+    toolbar->addAction(m_createRepositoryAction);
     toolbar->addAction(m_exportAction);
     toolbar->addAction(m_repoBrowserAction);
     toolbar->addSeparator();
@@ -1202,7 +1363,174 @@ void MainWindow::runWorkingCopyCommand(const QStringList &arguments, bool refres
     }
 }
 
-void MainWindow::runCheckout(const QString &url, const QString &target)
+bool MainWindow::setChangelistForPaths(const QStringList &paths)
+{
+    if (paths.isEmpty()) {
+        return false;
+    }
+
+    bool ok = false;
+    const QString name = QInputDialog::getText(this,
+                                               QStringLiteral("Set Changelist"),
+                                               QStringLiteral("Changelist name:"),
+                                               QLineEdit::Normal,
+                                               QString(),
+                                               &ok)
+                             .trimmed();
+    if (!ok || name.isEmpty()) {
+        return false;
+    }
+
+    QStringList arguments = {QStringLiteral("changelist"), name};
+    arguments.append(paths);
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run(arguments, m_workingCopy);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Set Changelist failed"), result.combinedOutput());
+        return false;
+    }
+
+    refreshStatus();
+    return true;
+}
+
+bool MainWindow::removeChangelistForPaths(const QStringList &paths)
+{
+    if (paths.isEmpty()) {
+        return false;
+    }
+
+    QStringList arguments = {QStringLiteral("changelist"), QStringLiteral("--remove")};
+    arguments.append(paths);
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run(arguments, m_workingCopy);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Remove Changelist failed"), result.combinedOutput());
+        return false;
+    }
+
+    refreshStatus();
+    return true;
+}
+
+bool MainWindow::resolvePaths(const QStringList &paths)
+{
+    if (paths.isEmpty()) {
+        return false;
+    }
+
+    const QStringList choices = {
+        QStringLiteral("working"),
+        QStringLiteral("mine-conflict"),
+        QStringLiteral("theirs-conflict"),
+        QStringLiteral("base"),
+    };
+
+    bool ok = false;
+    const QString choice = QInputDialog::getItem(this,
+                                                QStringLiteral("Resolve"),
+                                                QStringLiteral("Accept:"),
+                                                choices,
+                                                0,
+                                                false,
+                                                &ok);
+    if (!ok || choice.isEmpty()) {
+        return false;
+    }
+
+    QStringList arguments = {QStringLiteral("resolve"), QStringLiteral("--accept"), choice};
+    arguments.append(paths);
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run(arguments, m_workingCopy);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Resolve failed"), result.combinedOutput());
+        return false;
+    }
+
+    refreshStatus();
+    return true;
+}
+
+bool MainWindow::createPatchForPaths(const QStringList &paths)
+{
+    if (!ensureWorkingCopy()) {
+        return false;
+    }
+
+    QStringList arguments = {QStringLiteral("diff"), QStringLiteral("--internal-diff")};
+    const QString workingCopyPath = QDir::cleanPath(m_workingCopy);
+    for (const QString &path : paths) {
+        const QString cleanPath = QDir::cleanPath(path);
+        if (!cleanPath.isEmpty() && cleanPath != workingCopyPath) {
+            arguments.append(path);
+        }
+    }
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    const SvnResult result = m_svn.run(arguments, m_workingCopy);
+    QApplication::restoreOverrideCursor();
+    appendResult(result);
+
+    if (!result.ok()) {
+        QMessageBox::warning(this, QStringLiteral("Create Patch failed"), result.combinedOutput());
+        return false;
+    }
+    if (result.standardOutput.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("Create Patch"), QStringLiteral("There are no local diff lines to save."));
+        return false;
+    }
+
+    const QString fileName = QFileDialog::getSaveFileName(this,
+                                                         QStringLiteral("Save Patch"),
+                                                         QDir(m_workingCopy).absoluteFilePath(QStringLiteral("changes.patch")),
+                                                         QStringLiteral("Patch files (*.patch *.diff);;All files (*)"));
+    if (fileName.isEmpty()) {
+        return false;
+    }
+
+    QFile patchFile(fileName);
+    if (!patchFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, QStringLiteral("Create Patch failed"), QStringLiteral("Could not write the patch file."));
+        return false;
+    }
+    patchFile.write(result.standardOutput.toLocal8Bit());
+    patchFile.close();
+
+    statusBar()->showMessage(QStringLiteral("Patch saved."));
+    return true;
+}
+
+bool MainWindow::applyPatchFromDialog()
+{
+    if (!ensureWorkingCopy()) {
+        return false;
+    }
+
+    const QString fileName = QFileDialog::getOpenFileName(this,
+                                                         QStringLiteral("Apply Patch"),
+                                                         m_workingCopy,
+                                                         QStringLiteral("Patch files (*.patch *.diff);;All files (*)"));
+    if (fileName.isEmpty()) {
+        return false;
+    }
+
+    runWorkingCopyCommand({QStringLiteral("patch"), fileName}, true);
+    return true;
+}
+
+bool MainWindow::runCheckout(const QString &url, const QString &target)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
     const SvnResult result = m_svn.run({QStringLiteral("checkout"), url, target});
@@ -1211,10 +1539,11 @@ void MainWindow::runCheckout(const QString &url, const QString &target)
 
     if (!result.ok()) {
         QMessageBox::warning(this, QStringLiteral("Checkout failed"), result.combinedOutput());
-        return;
+        return false;
     }
 
     setWorkingCopy(target);
+    return true;
 }
 
 bool MainWindow::launchExternalDiff(const QString &path)
@@ -1372,12 +1701,19 @@ void MainWindow::openSettings()
 
 void MainWindow::checkout()
 {
-    CheckoutDialog dialog(this);
-    if (dialog.exec() != QDialog::Accepted) {
+    checkoutPath(QString());
+}
+
+void MainWindow::createRepository()
+{
+    const QString path = QFileDialog::getExistingDirectory(this,
+                                                          QStringLiteral("Create Repository Here"),
+                                                          m_workingCopy.isEmpty() ? QDir::homePath() : m_workingCopy);
+    if (path.isEmpty()) {
         return;
     }
 
-    runCheckout(dialog.repositoryUrl(), dialog.targetPath());
+    createRepositoryPath(path);
 }
 
 void MainWindow::exportProject()
@@ -1390,9 +1726,10 @@ void MainWindow::importProject()
     importPath(QString());
 }
 
-void MainWindow::browseRepository()
+void MainWindow::browseRepository(const QString &initialUrl)
 {
     RepositoryBrowserDialog browser(&m_svn, this);
+    browser.setRepositoryUrl(initialUrl);
     connect(&browser, &RepositoryBrowserDialog::commandFinished, this, &MainWindow::appendResult);
     if (browser.exec() != QDialog::Accepted) {
         return;
@@ -1647,21 +1984,7 @@ void MainWindow::setChangelist()
         return;
     }
 
-    bool ok = false;
-    const QString name = QInputDialog::getText(this,
-                                               QStringLiteral("Set Changelist"),
-                                               QStringLiteral("Changelist name:"),
-                                               QLineEdit::Normal,
-                                               QString(),
-                                               &ok)
-                             .trimmed();
-    if (!ok || name.isEmpty()) {
-        return;
-    }
-
-    QStringList arguments = {QStringLiteral("changelist"), name};
-    arguments.append(paths);
-    runWorkingCopyCommand(arguments, true);
+    setChangelistForPaths(paths);
 }
 
 void MainWindow::removeChangelist()
@@ -1675,9 +1998,7 @@ void MainWindow::removeChangelist()
         return;
     }
 
-    QStringList arguments = {QStringLiteral("changelist"), QStringLiteral("--remove")};
-    arguments.append(paths);
-    runWorkingCopyCommand(arguments, true);
+    removeChangelistForPaths(paths);
 }
 
 void MainWindow::cleanupWorkingCopy()
@@ -1696,28 +2017,7 @@ void MainWindow::resolveSelected()
         return;
     }
 
-    const QStringList choices = {
-        QStringLiteral("working"),
-        QStringLiteral("mine-conflict"),
-        QStringLiteral("theirs-conflict"),
-        QStringLiteral("base"),
-    };
-
-    bool ok = false;
-    const QString choice = QInputDialog::getItem(this,
-                                                QStringLiteral("Resolve"),
-                                                QStringLiteral("Accept:"),
-                                                choices,
-                                                0,
-                                                false,
-                                                &ok);
-    if (!ok || choice.isEmpty()) {
-        return;
-    }
-
-    QStringList arguments = {QStringLiteral("resolve"), QStringLiteral("--accept"), choice};
-    arguments.append(paths);
-    runWorkingCopyCommand(arguments, true);
+    resolvePaths(paths);
 }
 
 void MainWindow::showConflicts()
@@ -1822,65 +2122,23 @@ void MainWindow::createPatch()
         return;
     }
 
-    QStringList arguments = {QStringLiteral("diff"), QStringLiteral("--internal-diff")};
+    QStringList paths;
     const QStringList statusPaths = selectedStatusPaths();
     if (!statusPaths.isEmpty()) {
-        arguments.append(statusPaths);
+        paths.append(statusPaths);
     } else {
         const QString path = selectedPath();
         if (!path.isEmpty() && path != m_workingCopy) {
-            arguments.append(path);
+            paths.append(path);
         }
     }
 
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    const SvnResult result = m_svn.run(arguments, m_workingCopy);
-    QApplication::restoreOverrideCursor();
-    appendResult(result);
-
-    if (!result.ok()) {
-        QMessageBox::warning(this, QStringLiteral("Create Patch failed"), result.combinedOutput());
-        return;
-    }
-    if (result.standardOutput.isEmpty()) {
-        QMessageBox::information(this, QStringLiteral("Create Patch"), QStringLiteral("There are no local diff lines to save."));
-        return;
-    }
-
-    const QString fileName = QFileDialog::getSaveFileName(this,
-                                                         QStringLiteral("Save Patch"),
-                                                         QDir(m_workingCopy).absoluteFilePath(QStringLiteral("changes.patch")),
-                                                         QStringLiteral("Patch files (*.patch *.diff);;All files (*)"));
-    if (fileName.isEmpty()) {
-        return;
-    }
-
-    QFile patchFile(fileName);
-    if (!patchFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, QStringLiteral("Create Patch failed"), QStringLiteral("Could not write the patch file."));
-        return;
-    }
-    patchFile.write(result.standardOutput.toLocal8Bit());
-    patchFile.close();
-
-    statusBar()->showMessage(QStringLiteral("Patch saved."));
+    createPatchForPaths(paths);
 }
 
 void MainWindow::applyPatch()
 {
-    if (!ensureWorkingCopy()) {
-        return;
-    }
-
-    const QString fileName = QFileDialog::getOpenFileName(this,
-                                                         QStringLiteral("Apply Patch"),
-                                                         m_workingCopy,
-                                                         QStringLiteral("Patch files (*.patch *.diff);;All files (*)"));
-    if (fileName.isEmpty()) {
-        return;
-    }
-
-    runWorkingCopyCommand({QStringLiteral("patch"), fileName}, true);
+    applyPatchFromDialog();
 }
 
 void MainWindow::openProperties()
