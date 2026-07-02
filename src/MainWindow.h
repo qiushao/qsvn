@@ -82,6 +82,7 @@ private:
     bool createPatchForPaths(const QStringList &paths);
     bool applyPatchFromDialog();
     bool launchExternalDiff(const QString &path);
+    bool launchRevisionExternalDiff(const QString &revision, const QString &repositoryPath, const QString &action);
     bool launchExternalMerge(const QString &path);
 
     void openWorkingCopy();

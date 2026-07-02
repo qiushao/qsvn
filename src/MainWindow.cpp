@@ -701,6 +701,9 @@ bool MainWindow::showLogForPath(const QString &path)
 
         showTextDialog(QStringLiteral("Revision ") + revision + QStringLiteral(" Diff"), diffResult.standardOutput);
     });
+    connect(dialog, &LogDialog::changedPathDiffRequested, this, [this](const QString &revision, const QString &repositoryPath, const QString &action) {
+        launchRevisionExternalDiff(revision, repositoryPath, action);
+    });
     connect(dialog, &LogDialog::revisionBlameRequested, this, [this](const QString &revision, const QString &repositoryPath) {
         QString blameTarget = repositoryPath;
         if (repositoryPath.startsWith('/')) {
@@ -1309,7 +1312,7 @@ void MainWindow::appendResult(const SvnResult &result)
 void MainWindow::showTextDialog(const QString &title, const QString &text)
 {
     auto *dialog = new QDialog(this);
-    dialog->setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
+    dialog->setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     dialog->setWindowTitle(title);
     dialog->resize(900, 650);
 
@@ -1590,6 +1593,123 @@ bool MainWindow::launchExternalDiff(const QString &path)
     }
 
     m_outputView->appendPlainText(QStringLiteral("> external diff ") + m_settings.externalDiffCommand);
+    return true;
+}
+
+bool MainWindow::launchRevisionExternalDiff(const QString &revision, const QString &repositoryPath, const QString &action)
+{
+    if (m_settings.externalDiffCommand.isEmpty()) {
+        QMessageBox::information(this, QStringLiteral("External diff"), QStringLiteral("Configure an external diff command in Settings first."));
+        return false;
+    }
+
+    bool revisionOk = false;
+    const qlonglong revisionNumber = revision.toLongLong(&revisionOk);
+    if (!revisionOk || revisionNumber <= 0) {
+        QMessageBox::warning(this, QStringLiteral("External diff failed"), QStringLiteral("The selected revision cannot be compared."));
+        return false;
+    }
+
+    QString target = repositoryPath;
+    if (repositoryPath.startsWith('/')) {
+        const QString rootUrl = workingCopyRepositoryRootUrl();
+        if (rootUrl.isEmpty()) {
+            QMessageBox::warning(this, QStringLiteral("External diff failed"), QStringLiteral("Could not determine the repository root URL."));
+            return false;
+        }
+        target = rootUrl + repositoryPath;
+    }
+
+    const QString previousRevision = QString::number(revisionNumber - 1);
+    const QString changedAction = action.trimmed().left(1);
+    QString baseContent;
+    QString workingContent;
+
+    auto readRevisionFile = [this, &target](const QString &revision, QString *content) {
+        const QString targetAtRevision = target + QStringLiteral("@") + revision;
+        const SvnResult result = m_svn.run({QStringLiteral("cat"), QStringLiteral("-r"), revision, targetAtRevision}, m_workingCopy);
+        appendResult(result);
+        if (!result.ok()) {
+            return false;
+        }
+
+        *content = result.standardOutput;
+        return true;
+    };
+
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    bool baseOk = true;
+    if (changedAction != QStringLiteral("A")) {
+        baseOk = readRevisionFile(previousRevision, &baseContent);
+    }
+
+    bool workingOk = true;
+    if (changedAction != QStringLiteral("D")) {
+        workingOk = readRevisionFile(revision, &workingContent);
+    }
+    QApplication::restoreOverrideCursor();
+
+    if (!baseOk || !workingOk) {
+        QMessageBox::warning(this, QStringLiteral("External diff failed"), QStringLiteral("Could not read the selected changed path as a file."));
+        return false;
+    }
+
+    QString cacheRoot = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+    if (cacheRoot.isEmpty()) {
+        cacheRoot = QDir::tempPath() + QStringLiteral("/qsvn");
+    }
+
+    QDir cacheDir(cacheRoot);
+    if (!cacheDir.mkpath(QStringLiteral("diff"))) {
+        QMessageBox::warning(this, QStringLiteral("External diff failed"), QStringLiteral("Could not create the diff cache directory."));
+        return false;
+    }
+    cacheDir.cd(QStringLiteral("diff"));
+
+    QString fileName = QFileInfo(repositoryPath).fileName();
+    if (fileName.isEmpty()) {
+        fileName = QStringLiteral("changed-path");
+    }
+
+    const QString suffix = QString::number(QDateTime::currentMSecsSinceEpoch());
+    const QString basePath = cacheDir.absoluteFilePath(fileName + QStringLiteral(".r") + previousRevision + QStringLiteral(".") + suffix);
+    const QString workingPath = cacheDir.absoluteFilePath(fileName + QStringLiteral(".r") + revision + QStringLiteral(".") + suffix);
+
+    auto writeCacheFile = [](const QString &path, const QString &content) {
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            return false;
+        }
+
+        file.write(content.toLocal8Bit());
+        file.close();
+        return true;
+    };
+
+    if (!writeCacheFile(basePath, baseContent) || !writeCacheFile(workingPath, workingContent)) {
+        QMessageBox::warning(this, QStringLiteral("External diff failed"), QStringLiteral("Could not write the cached revision files."));
+        return false;
+    }
+
+    const ExternalToolCommand command = buildExternalToolCommand(m_settings.externalDiffCommand,
+                                                                {
+                                                                    {QStringLiteral("base"), basePath},
+                                                                    {QStringLiteral("old"), basePath},
+                                                                    {QStringLiteral("working"), workingPath},
+                                                                    {QStringLiteral("new"), workingPath},
+                                                                    {QStringLiteral("path"), workingPath},
+                                                                },
+                                                                {basePath, workingPath});
+    if (!command.isValid()) {
+        return false;
+    }
+
+    if (!QProcess::startDetached(command.program, command.arguments)) {
+        QMessageBox::warning(this, QStringLiteral("External diff failed"), QStringLiteral("Could not start the configured external diff command."));
+        return false;
+    }
+
+    m_outputView->appendPlainText(QStringLiteral("> external revision diff ") + m_settings.externalDiffCommand);
     return true;
 }
 
@@ -2194,6 +2314,9 @@ void MainWindow::logSelected()
         }
 
         showTextDialog(QStringLiteral("Revision ") + revision + QStringLiteral(" Diff"), diffResult.standardOutput);
+    });
+    connect(dialog, &LogDialog::changedPathDiffRequested, this, [this](const QString &revision, const QString &repositoryPath, const QString &action) {
+        launchRevisionExternalDiff(revision, repositoryPath, action);
     });
     connect(dialog, &LogDialog::revisionBlameRequested, this, [this](const QString &revision, const QString &repositoryPath) {
         QString blameTarget = repositoryPath;

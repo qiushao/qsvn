@@ -14,7 +14,7 @@ LogDialog::LogDialog(const QVector<SvnLogEntry> &entries, QWidget *parent)
     : QDialog(parent)
     , m_entries(entries)
 {
-    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     setWindowTitle(QStringLiteral("Log"));
     resize(920, 680);
 
@@ -66,6 +66,9 @@ LogDialog::LogDialog(const QVector<SvnLogEntry> &entries, QWidget *parent)
     m_pathTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_pathTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_pathTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    connect(m_pathTable, &QTableWidget::itemDoubleClicked, this, [this](QTableWidgetItem *) {
+        requestChangedPathDiff();
+    });
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     auto *showDiffButton = buttons->addButton(QStringLiteral("Show Diff"), QDialogButtonBox::ActionRole);
@@ -121,6 +124,22 @@ void LogDialog::requestRevisionDiff()
     emit revisionDiffRequested(m_entries.at(row).revision);
 }
 
+void LogDialog::requestChangedPathDiff()
+{
+    const int row = currentEntryRow();
+    if (row < 0 || row >= m_entries.size()) {
+        return;
+    }
+
+    const QString changedPath = currentChangedPath();
+    const QString repositoryPath = repositoryPathFromChangedPath(changedPath);
+    if (repositoryPath.isEmpty()) {
+        return;
+    }
+
+    emit changedPathDiffRequested(m_entries.at(row).revision, repositoryPath, changedPathActionFromChangedPath(changedPath));
+}
+
 void LogDialog::requestRevisionBlame()
 {
     const int row = currentEntryRow();
@@ -155,6 +174,16 @@ QString LogDialog::currentChangedPath() const
     }
 
     return selectedItems.first()->text();
+}
+
+QString LogDialog::changedPathActionFromChangedPath(const QString &changedPath) const
+{
+    const int separator = changedPath.indexOf(QStringLiteral("  "));
+    if (separator < 0) {
+        return QString();
+    }
+
+    return changedPath.left(separator).trimmed();
 }
 
 void LogDialog::applyFilter()

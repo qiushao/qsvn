@@ -15,7 +15,7 @@ RepositoryBrowserDialog::RepositoryBrowserDialog(const SvnClient *svnClient, QWi
     : QDialog(parent)
     , m_svnClient(svnClient)
 {
-    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     setWindowTitle(QStringLiteral("Repository Browser"));
     resize(760, 560);
 

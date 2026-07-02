@@ -10,7 +10,7 @@
 CommitDialog::CommitDialog(const QVector<SvnStatus> &statuses, QWidget *parent)
     : QDialog(parent)
 {
-    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     setWindowTitle(QStringLiteral("Commit"));
     resize(640, 520);
 

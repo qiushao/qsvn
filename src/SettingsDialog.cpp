@@ -12,7 +12,7 @@
 SettingsDialog::SettingsDialog(const ApplicationSettings &settings, QWidget *parent)
     : QDialog(parent)
 {
-    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     setWindowTitle(QStringLiteral("Settings"));
     setMinimumWidth(640);
 

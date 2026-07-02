@@ -13,7 +13,7 @@
 ImportDialog::ImportDialog(QWidget *parent)
     : QDialog(parent)
 {
-    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     setWindowTitle(QStringLiteral("Import"));
     resize(680, 360);
 

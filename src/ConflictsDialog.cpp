@@ -14,7 +14,7 @@ ConflictsDialog::ConflictsDialog(const QVector<SvnStatus> &conflicts, const QStr
     , m_conflicts(conflicts)
     , m_workingCopy(workingCopy)
 {
-    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint);
+    setWindowFlags(Qt::Window | Qt::WindowMaximizeButtonHint | Qt::WindowMinimizeButtonHint | Qt::WindowCloseButtonHint);
     setWindowTitle(QStringLiteral("Conflicts"));
     resize(760, 480);
 
