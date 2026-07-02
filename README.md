@@ -43,6 +43,12 @@ cmake -S . -B build -G Ninja
 cmake --build build
 ```
 
+Build a Debian package:
+
+```sh
+scripts/build-deb.sh
+```
+
 ## Run
 
 ```sh
