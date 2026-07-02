@@ -970,16 +970,10 @@ void MainWindow::createCentralWidget()
 
     m_fileModel = new QFileSystemModel(this);
     m_fileModel->setFilter(QDir::AllDirs | QDir::Files | QDir::NoDotAndDotDot);
-    m_fileModel->setRootPath(QDir::homePath());
 
     m_treeView = new QTreeView(mainSplitter);
-    m_treeView->setModel(m_fileModel);
-    m_treeView->setRootIndex(m_fileModel->index(QDir::homePath()));
     m_treeView->setContextMenuPolicy(Qt::CustomContextMenu);
     m_treeView->setSelectionMode(QAbstractItemView::SingleSelection);
-    for (int column = 1; column < m_fileModel->columnCount(); ++column) {
-        m_treeView->hideColumn(column);
-    }
     connect(m_treeView, &QTreeView::customContextMenuRequested, this, [this](const QPoint &position) {
         QMenu menu(this);
         menu.addAction(m_addAction);
@@ -1108,20 +1102,10 @@ void MainWindow::createToolBar()
     toolbar->setMovable(false);
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     toolbar->addAction(m_openAction);
-    toolbar->addAction(m_settingsAction);
     toolbar->addSeparator();
-    toolbar->addAction(m_checkoutAction);
-    toolbar->addAction(m_createRepositoryAction);
-    toolbar->addAction(m_exportAction);
     toolbar->addAction(m_repoBrowserAction);
     toolbar->addSeparator();
-    toolbar->addAction(m_branchTagAction);
-    toolbar->addAction(m_switchAction);
-    toolbar->addAction(m_relocateAction);
-    toolbar->addAction(m_mergeAction);
-    toolbar->addSeparator();
     toolbar->addAction(m_refreshAction);
-    toolbar->addAction(m_checkRepositoryAction);
     toolbar->addAction(m_updateAction);
     toolbar->addAction(m_commitAction);
     toolbar->addSeparator();
@@ -1132,8 +1116,6 @@ void MainWindow::createToolBar()
     toolbar->addAction(m_renameAction);
     toolbar->addAction(m_revertAction);
     toolbar->addAction(m_diffAction);
-    toolbar->addAction(m_propertiesAction);
-    toolbar->addAction(m_createPatchAction);
     toolbar->addAction(m_logAction);
 }
 
@@ -1141,8 +1123,12 @@ void MainWindow::setWorkingCopy(const QString &path)
 {
     m_workingCopy = QDir(path).absolutePath();
     m_pathEdit->setText(m_workingCopy);
-    m_fileModel->setRootPath(m_workingCopy);
-    m_treeView->setRootIndex(m_fileModel->index(m_workingCopy));
+    m_treeView->setModel(m_fileModel);
+    const QModelIndex rootIndex = m_fileModel->setRootPath(m_workingCopy);
+    m_treeView->setRootIndex(rootIndex);
+    for (int column = 1; column < m_fileModel->columnCount(); ++column) {
+        m_treeView->hideColumn(column);
+    }
     updateActionState();
     refreshStatus();
 }

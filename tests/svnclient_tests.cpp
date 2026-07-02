@@ -55,6 +55,11 @@ void SvnClientTests::parseCommandLineReadsActions()
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Diff));
     QCOMPARE(request.path, QStringLiteral("/tmp/wc/file.txt"));
 
+    request = parseCommandLine({QStringLiteral("qsvn")});
+    QVERIFY(request.ok());
+    QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Open));
+    QCOMPARE(request.path, QDir::currentPath());
+
     request = parseCommandLine({QStringLiteral("qsvn"), QStringLiteral("--settings")});
     QVERIFY(request.ok());
     QCOMPARE(static_cast<int>(request.action), static_cast<int>(CommandLineAction::Settings));

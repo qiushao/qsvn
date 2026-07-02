@@ -1,5 +1,7 @@
 #include "CommandLine.h"
 
+#include <QDir>
+
 bool CommandLineRequest::ok() const
 {
     return error.isEmpty();
@@ -9,6 +11,8 @@ CommandLineRequest parseCommandLine(const QStringList &arguments)
 {
     CommandLineRequest request;
     if (arguments.size() <= 1) {
+        request.action = CommandLineAction::Open;
+        request.path = QDir::currentPath();
         return request;
     }
 
